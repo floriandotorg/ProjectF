@@ -1,9 +1,9 @@
 FASM_PATH = ../asm/
 FASM = $(FASM_PATH)fasm
-SOURCE = main.fasm
+SOURCE = os.fasm
 IMAGE = flash.bin
 
 all: $(IMAGE)
 
-$(IMAGE):
+$(IMAGE): $(SOURCE)
 	$(FASM) $(SOURCE) $(IMAGE)
