@@ -53,11 +53,45 @@ uint32_t ind_off_x(cpu_t *cpu)
     return *val(*val(imm(cpu), cpu) + cpu->x, cpu);
 }
 
-int main()
-{ 
+int main(int argc, char *argv[])
+{
     unsigned char opcode = 0x00;
     cpu_t *cpu = malloc(sizeof(*cpu));
     memset(cpu, 0, sizeof(*cpu));
+
+    FILE *in = NULL;
+    int halted = 0;
+
+    if(argc != 2)
+    {
+        puts("usage: fsim <in>");
+        return EXIT_SUCCESS;
+    }
+
+    in = fopen(argv[1], "r");
+
+    if(!in)
+    {
+        printf("could not open file \"%s\"",argv[1]);
+        return EXIT_FAILURE;
+    }
+
+    fread(cpu->flash, sizeof(cpu->flash), 1, in);
+
+    int i = 0;
+    for(;i < 12; i++) {
+      printf("%02x", cpu->flash[i]);
+      if (i % 2 == 1) {
+        printf(" ");
+      }
+      if (i % 4 == 3) {
+        printf("\n");
+      }
+    }
+
+    fclose(in);
+    in = NULL;
+
     cpu->a = 0;
     cpu->x = 0;
     cpu->pc = 0x01000000;
@@ -66,7 +100,7 @@ int main()
     cpu->n = 0;
     cpu->i = 1; // By default off → no interrupt table defined
 
-    cpu->ram[0] = 0x13;
+/*    cpu->ram[0] = 0x13;
     cpu->ram[1] = 0x37;
     cpu->ram[2] = 0x74;
     cpu->ram[3] = 0x47;
@@ -85,264 +119,263 @@ int main()
     puts("before\n");
     printf("%08x\n", *val(0, cpu));
     printf("%08x\n", *val(0x01000000 + 1, cpu));
-   cpu->x = 4;
+    cpu->x = 4;
     printf("%08x\n", imm(cpu)); cpu->pc = 0x01000000;
     printf("%08x\n", absolute(cpu)); cpu->pc = 0x01000000;
     printf("%08x\n", ind_x(cpu)); cpu->pc = 0x01000000;
     printf("%08x\n", ind_off_x(cpu)); cpu->pc = 0x01000000;
-    printf("%08x\n", cpu->pc);
+    printf("%08x\n", cpu->pc);*/
+
+    while(!halted) {
+      opcode = (uint8_t) *val(cpu->pc++, cpu);
+      switch (opcode) {
+      case 0xAF:
+        cpu->a = imm(cpu);
+        break;
+      case 0xAE:
+        cpu->a = absolute(cpu);
+        break;
+      case 0xAD:
+        cpu->a = ind_x(cpu);
+        break;
+      case 0xAC:
+        cpu->a = ind_off_x(cpu);
+        break;
+      case 0xA0:
+        cpu->x = imm(cpu);
+        break;
+      case 0xA1:
+        cpu->x = absolute(cpu);
+        break;
+      case 0xA2:
+        cpu->x = ind_x(cpu);
+        break;
+      case 0xA3:
+        cpu->x = ind_off_x(cpu);
+        break;
+      case 0x90:
+      case 0x91:
+      case 0x92:
+        puts("STA\n");
+        break;
+      case 0x9D:
+      case 0x9E:
+      case 0x9F:
+        puts("STX\n");
+        break;
+      // TXA
+      case 0xA9:
+        cpu->a = cpu->x;
+        break;
+      // TAX
+      case 0xAA:
+        cpu->x = cpu->a;
+        break;
+      // TXS
+      case 0xB0:
+        cpu->sp = cpu->x;
+        break;
+      // TSX
+      case 0xB1:
+        cpu->x = cpu->sp;
+        break;
+      //PUA
+      case 0xB2:
+        *val(cpu->sp--, cpu) = cpu->a;
+        break;
+      //PUX
+      case 0xB3:
+        *val(cpu->sp--, cpu) = cpu->x;
+        break;
+      //POA
+      case 0xB4:
+        cpu->a = *val(++cpu->sp, cpu);
+        break;
+      // POX
+      case 0xB5:
+        cpu->x = *val(++cpu->sp, cpu);
+        break;
+      case 0xF0:
+        cpu->a = cpu->a & imm(cpu);
+        break;
+      case 0xF1:
+        cpu->a = cpu->a & absolute(cpu);
+        break;
+      case 0xF2:
+        cpu->a = cpu->a & ind_x(cpu);
+        break;
+      case 0xF3:
+        cpu->a = cpu->a & ind_off_x(cpu);
+        break;
+      case 0xF4:
+        cpu->a = cpu->a | imm(cpu);
+        break;
+      case 0xF5:
+        cpu->a = cpu->a | absolute(cpu);
+        break;
+      case 0xF6:
+        cpu->a = cpu->a | ind_x(cpu);
+        break;
+      case 0xF7:
+        cpu->a = cpu->a | ind_off_x(cpu);
+        break;
+      // XOR
+      case 0xF8:
+        cpu->a = cpu->a ^ imm(cpu);
+        break;
+      case 0xF9:
+        cpu->a = cpu->a ^ absolute(cpu);
+        break;
+      case 0xFA:
+        cpu->a = cpu->a ^ ind_x(cpu);
+        break;
+      case 0xFB:
+        cpu->a = cpu->a ^ ind_off_x(cpu);
+        break;
+      //ROR
+      case 0xFC:
+      case 0xFD:
+      case 0xFE:
+      case 0xFF:
+        break;
+      //ROL
+      case 0xE1:
+      case 0xE2:
+      case 0xE3:
+      case 0xE4:
+        break;
+      //LSR
+      case 0xE5:
+        cpu->a = cpu->a >> imm(cpu);
+        break;
+      case 0xE6:
+        cpu->a = cpu->a >> absolute(cpu);
+        break;
+      case 0xE7:
+        cpu->a = cpu->a >> ind_x(cpu);
+        break;
+      case 0xE8:
+        cpu->a = cpu->a >> ind_off_x(cpu);
+        break;
+      //LSL
+      case 0xE9:
+        cpu->a = cpu->a << imm(cpu);
+        break;
+      case 0xEA:
+        cpu->a = cpu->a << absolute(cpu);
+        break;
+      case 0xEB:
+        cpu->a = cpu->a << ind_x(cpu);
+        break;
+      case 0xEC:
+        cpu->a = cpu->a << ind_off_x(cpu);      
+        cpu->z = cpu->a == 0;
+        break;
+      // ADD
+      case 0xC0:
+        cpu->a = cpu->a + imm(cpu);      
+        cpu->z = cpu->a == 0;
+        cpu->z = cpu->a < 0;
+        break;
+      case 0xC1:
+        cpu->a = cpu->a + absolute(cpu);      
+        cpu->z = cpu->a == 0;
+        cpu->z = cpu->a < 0;
+        break;
+      case 0xC2:
+        cpu->a = cpu->a + ind_x(cpu);      
+        cpu->z = cpu->a == 0;
+        cpu->z = cpu->a < 0;
+        break;
+      case 0xC3:
+        cpu->a = cpu->a + ind_off_x(cpu);
+        cpu->z = cpu->a == 0;
+        cpu->z = cpu->a < 0;
+        break;
+      //CMP
+      case 0xC4:
+      case 0xC5:
+      case 0xC6:
+      case 0xC7:
+/*      cpu->z = cpu->a == 0 ? 0 : 1;
+        cpu->n = cpu->a < 0 ? 0 : 1;*/
+        puts("CMP");
+        break;
+      //JMP
+      case 0xD0:
+        cpu->pc = imm(cpu);
+        break;
+      case 0xD1:
+        //cpu->pc = ind_x(cpu);
+      case 0xD2:
+        puts("\"C\"-JMP");
+        break;
+      //BNE
+      case 0xD3:
+      case 0xD4:
+      case 0xD5:
+        puts("BNE");
+        break;
+      //BGT
+      case 0xD6:
+      case 0xD7:
+      case 0xD8:
+        puts("BGT");
+        break;
+      //LGT
+      case 0xD9:
+      case 0xDA:
+      case 0xDB:
+        puts("LGT");
+        break;
+      //JTS
+      case 0xDC:
+      case 0xDD:
+      case 0xDE:
+        puts("JTS");
+        break;
+      //RTS
+      case 0xDF:
+        puts("RTS");
+        break;
+      //INA
+      case 0xC8:
+        cpu->a++;
+        break;
+      //INX
+      case 0xC9:
+        cpu->x++;
+        break;
+      //DEA
+      case 0xCA:
+        cpu->a--;
+        break;
+      //DEX
+      case 0xCB:
+        cpu->x--;
+        break;
+      //SEI
+      case 0x80:
+        cpu->i = 1;
+        break;
+      //CLI
+      case 0x81:
+        cpu->i = 0;
+        break;
+      //NOP
+      case 0x82:
+        break;
+      default:
+        puts("Illegal opcode");
+      //HLT
+      case 0x83:
+        halted = 1;
+        break;
+      }
+    }
 
     free(cpu);
     cpu = NULL;
-
-    return 0;
-
-
-    switch (opcode) {
-    case 0xAF:
-      cpu->a = imm(cpu);
-      break;
-    case 0xAE:
-      cpu->a = absolute(cpu);
-      break;
-    case 0xAD:
-      cpu->a = ind_x(cpu);
-      break;
-    case 0XAC:
-      cpu->a = ind_off_x(cpu);
-      break;
-    case 0xA0:
-      cpu->x = imm(cpu);
-      break;
-    case 0xA1:
-      cpu->x = absolute(cpu);
-      break;
-    case 0xA2:
-      cpu->x = ind_x(cpu);
-    case 0xA3:
-      cpu->x = ind_off_x(cpu);
-      break;
-    case 0x90:
-    case 0x91:
-    case 0x92:
-      puts("STA\n");
-      break;
-    case 0x9D:
-    case 0x9E:
-    case 0x9F:
-      puts("STX\n");
-      break;
-    // TXA
-    case 0xA9:
-      cpu->a = cpu->x;
-      break;
-    // TAX
-    case 0xAA:
-      cpu->x = cpu->a;
-      break;
-    // TXS
-    case 0xB0:
-      cpu->sp = cpu->x;
-      break;
-    // TSX
-    case 0xB1:
-      cpu->x = cpu->sp;
-      break;
-    //PUA
-    case 0xB2:
-      *val(cpu->sp--, cpu) = cpu->a;
-      break;
-    //PUX
-    case 0xB3:
-      *val(cpu->sp--, cpu) = cpu->x;
-      break;
-    //POA
-    case 0xB4:
-      cpu->a = *val(++cpu->sp, cpu);
-      break;
-    //POX
-    case 0xB5:
-      cpu->x = *val(++cpu->sp, cpu);
-      break;
-    case 0xF0:
-      cpu->a = cpu->a & imm(cpu);
-      break;
-    case 0xF1:
-      cpu->a = cpu->a & absolute(cpu);
-      break;
-    case 0xF2:
-      cpu->a = cpu->a & ind_x(cpu);
-      break;
-    case 0xF3:
-      cpu->a = cpu->a & ind_off_x(cpu);
-      break;
-    case 0xF4:
-      cpu->a = cpu->a | imm(cpu);
-      break;
-    case 0xF5:
-      cpu->a = cpu->a | absolute(cpu);
-      break;
-    case 0xF6:
-      cpu->a = cpu->a | ind_x(cpu);
-      break;
-    case 0xF7:
-      cpu->a = cpu->a | ind_off_x(cpu);
-      break;
-    // XOR
-    case 0xF8:
-      cpu->a = cpu->a ^ imm(cpu);
-      break;
-    case 0xF9:
-      cpu->a = cpu->a ^ absolute(cpu);
-      break;
-    case 0xFA:
-      cpu->a = cpu->a ^ ind_x(cpu);
-      break;
-    case 0xFB:
-      cpu->a = cpu->a ^ ind_off_x(cpu);
-      break;
-    //ROR
-    case 0xFC:
-    case 0xFD:
-    case 0xFE:
-    case 0xFF:
-      break;
-    //ROL
-    case 0xE1:
-    case 0xE2:
-    case 0xE3:
-    case 0xE4:
-      break;
-    //LSR
-    case 0xE5:
-      cpu->a = cpu->a >> imm(cpu);
-      break;
-    case 0xE6:
-      cpu->a = cpu->a >> absolute(cpu);
-      break;
-    case 0xE7:
-      cpu->a = cpu->a >> ind_x(cpu);
-      break;
-    case 0xE8:
-      cpu->a = cpu->a >> ind_off_x(cpu);
-      break;
-    //LSL
-    case 0xE9:
-      cpu->a = cpu->a << imm(cpu);
-      break;
-    case 0xEA:
-      cpu->a = cpu->a << absolute(cpu);
-      break;
-    case 0xEB:
-      cpu->a = cpu->a << ind_x(cpu);
-      break;
-    case 0xEC:
-      cpu->a = cpu->a << ind_off_x(cpu);      
-      cpu->z = cpu->a == 0;
-      break;
-    //ADD
-    case 0xC0:
-      cpu->a = cpu->a + imm(cpu);      
-      cpu->z = cpu->a == 0;
-      cpu->z = cpu->a < 0;
-      break;
-    case 0xC1:
-      cpu->a = cpu->a + absolute(cpu);      
-      cpu->z = cpu->a == 0;
-      cpu->z = cpu->a < 0;
-      break;
-    case 0xC2:
-      cpu->a = cpu->a + ind_x(cpu);      
-      cpu->z = cpu->a == 0;
-      cpu->z = cpu->a < 0;
-      break;
-    case 0xC3:
-      cpu->a = cpu->a + ind_off_x(cpu);
-      cpu->z = cpu->a == 0;
-      cpu->z = cpu->a < 0;
-      break;
-    //CMP
-    case 0xC4:
-    case 0xC5:
-    case 0xC6:
-    case 0xC7:
-/*      cpu->z = cpu->a == 0 ? 0 : 1;
-      cpu->n = cpu->a < 0 ? 0 : 1;*/
-      puts("CMP");
-      break;
-    //JMP
-    case 0xD0:
-      cpu->pc = imm(cpu);
-      break;
-    case 0xD1:
-      //cpu->pc = ind_x(cpu);
-    case 0xD2:
-      puts("\"C\"-JMP");
-      break;
-    //BNE
-    case 0xD3:
-    case 0xD4:
-    case 0xD5:
-      puts("BNE");
-      break;
-    //BGT
-    case 0xD6:
-    case 0xD7:
-    case 0xD8:
-      puts("BGT");
-      break;
-    //LGT
-    case 0xD9:
-    case 0xDA:
-    case 0xDB:
-      puts("LGT");
-      break;
-    //JTS
-    case 0xDC:
-    case 0xDD:
-    case 0xDE:
-      puts("JTS");
-      break;
-    //RTS
-    case 0xDF:
-      puts("RTS");
-      break;
-    //INA
-    case 0xC8:
-      cpu->a++;
-      break;
-    //INX
-    case 0xC9:
-      cpu->x++;
-      break;
-    //DEA
-    case 0xCA:
-      cpu->a--;
-      break;
-    //DEX
-    case 0xCB:
-      cpu->x--;
-      break;
-    //SEI
-    case 0x80:
-      cpu->i = 1;
-      break;
-    //CLI
-    case 0x81:
-      cpu->i = 0;
-      break;
-    //NOP
-    case 0x82:
-      break;
-    //HLT
-    case 0x83:
-      puts("HLT"); // INCOMPLETE!
-      break;
-    default:
-      puts("Illegal opcode");
-      break;
-    }
-
 
     puts("Hallo Welt!");
     return 0;
