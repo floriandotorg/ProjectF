@@ -372,7 +372,7 @@ SEI
 ---
 
 MODE            SYNTAX          HEX     LEN
-                SEI             $B0     1
+                SEI             $80     1
                 
 Affects Flags: I := 1
                 
@@ -380,7 +380,7 @@ CLI
 ---
 
 MODE            SYNTAX          HEX     LEN
-                CLI             $B1     1
+                CLI             $81     1
                 
 Affects Flags: I := 0
 
@@ -388,10 +388,10 @@ NOP
 ---
 
 MODE            SYNTAX          HEX     LEN
-                NOP             $B2     1
+                NOP             $82     1
 
 HLT
 ---
 
 MODE            SYNTAX          HEX     LEN
-                HLT             $B3     1
+                HLT             $83     1
