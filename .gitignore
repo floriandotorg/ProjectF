@@ -1,6 +1,9 @@
 *.o
-
+*.bin
 *.exe
 
-fasm
-fsim
+asm/fasm
+sim/fsim
+
+dist/*
+!dist/start.bat
