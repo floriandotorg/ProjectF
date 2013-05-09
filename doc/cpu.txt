@@ -105,6 +105,22 @@ Indirect,Off    LDX ($10),X     $A3     5
 
 Affects Flags: Z := Result != 0
 
+STA
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        STA $10         $90     5
+Indirect,X      STA ($10,X)     $91     5
+Indirect,Off    STA ($10),X     $92     5
+
+STX
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        STX $10         $9D     5
+Indirect,X      STX ($10,X)     $9E     5
+Indirect,Off    STX ($10),X     $9F     5
+
 TXA
 ---
 
