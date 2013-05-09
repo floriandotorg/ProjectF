@@ -92,7 +92,7 @@ Absolute        LDA $10         $AE     5
 Indirect,X      LDA ($10,X)     $AD     5
 Indirect,Off    LDA ($10),X     $AC     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 LDX
 ---
@@ -103,7 +103,23 @@ Absolute        LDX $10         $A1     5
 Indirect,X      LDX ($10,X)     $A2     5
 Indirect,Off    LDX ($10),X     $A3     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
+
+STA
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        STA $10         $90     5
+Indirect,X      STA ($10,X)     $91     5
+Indirect,Off    STA ($10),X     $92     5
+
+STX
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        STX $10         $9D     5
+Indirect,X      STX ($10,X)     $9E     5
+Indirect,Off    STX ($10),X     $9F     5
 
 TXA
 ---
@@ -111,7 +127,7 @@ TXA
 MODE            SYNTAX          HEX     LEN
                 TXA             $A9     1
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 TAX
 ---
@@ -119,7 +135,7 @@ TAX
 MODE            SYNTAX          HEX     LEN
                 TAX             $AA     1
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 TXS
 ---
@@ -127,7 +143,7 @@ TXS
 MODE            SYNTAX          HEX     LEN
                 TXS             $B0     1
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 TSX
 ---
@@ -135,7 +151,7 @@ TSX
 MODE            SYNTAX          HEX     LEN
                 TSX             $B1     1
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 PUA
 ---
@@ -143,7 +159,7 @@ PUA
 MODE            SYNTAX          HEX     LEN
                 PUA             $B2     1
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 PUX
 ---
@@ -151,7 +167,7 @@ PUX
 MODE            SYNTAX          HEX     LEN
                 PUX             $B3     1
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 POA
 ---
@@ -159,7 +175,7 @@ POA
 MODE            SYNTAX          HEX     LEN
                 POA             $B4     1
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 POX
 ---
@@ -167,7 +183,7 @@ POX
 MODE            SYNTAX          HEX     LEN
                 POX             $B5     1
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 AND
 ---
@@ -178,7 +194,7 @@ Absolute        AND $10         $F1     5
 Indirect,X      AND ($10,X)     $F2     5
 Indirect,Off    AND ($10),X     $F3     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 OR
 ---
@@ -189,7 +205,7 @@ Absolute        OR $10          $F5     5
 Indirect,X      OR ($10,X)      $F6     5
 Indirect,Off    OR ($10),X      $F7     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 XOR
 ---
@@ -200,7 +216,7 @@ Absolute        XOR $10         $F9     5
 Indirect,X      XOR ($10,X)     $FA     5
 Indirect,Off    XOR ($10),X     $FB     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 ROR
 ---
@@ -211,7 +227,7 @@ Absolute        ROR $10         $FD     5
 Indirect,X      ROR ($10,X)     $FE     5
 Indirect,Off    ROR ($10),X     $FF     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 ROL
 ---
@@ -222,7 +238,7 @@ Absolute        ROL $10         $E2     5
 Indirect,X      ROL ($10,X)     $E3     5
 Indirect,Off    ROL ($10),X     $E4     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 LSR
 ---
@@ -233,7 +249,7 @@ Absolute        LSR $10         $E6     5
 Indirect,X      LSR ($10,X)     $E7     5
 Indirect,Off    LSR ($10),X     $E8     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 LSL
 ---
@@ -244,7 +260,7 @@ Absolute        LSL $10         $EA     5
 Indirect,X      LSL ($10,X)     $EB     5
 Indirect,Off    LSL ($10),X     $EC     5
 
-Affects Flags: Z := Result != 0
+Affects Flags: Z := Result == 0
 
 ADD
 ---
@@ -255,7 +271,7 @@ Absolute        ADD $10         $C1     5
 Indirect,X      ADD ($10,X)     $C2     5
 Indirect,Off    ADD ($10),X     $C3     5
 
-Affects Flags: Z := Result != 0, N
+Affects Flags: Z := Result == 0, N := Result < 0
 
 CMP
 ---
@@ -266,7 +282,7 @@ Absolute        CMP $10         $C5     5
 Indirect,X      CMP ($10,X)     $C6    5
 Indirect,Off    CMP ($10),X     $C7     5
 
-Affects Flags: Z := Result != 0, N := Result < A
+Affects Flags: Z := Parameter == A, N := Parameter < A
 
 JMP
 ---
@@ -326,7 +342,7 @@ INA
 MODE            SYNTAX          HEX     LEN
                 INA             $C8     1
                 
-Affects Flags: Z := Result != 0, N := Result < A
+Affects Flags: Z := Result == 0, N := Result < A
 
 INX
 ---
@@ -334,7 +350,7 @@ INX
 MODE            SYNTAX          HEX     LEN
                 INX             $C9     1
                 
-Affects Flags: Z := Result != 0, N := Result < A
+Affects Flags: Z := Result == 0, N := Result < A
 
 DEA
 ---
@@ -342,7 +358,7 @@ DEA
 MODE            SYNTAX          HEX     LEN
                 DEA             $CA     1
                 
-Affects Flags: Z := Result != 0, N := Result < A
+Affects Flags: Z := Result == 0, N := Result < A
 
 DEX
 ---
@@ -350,13 +366,13 @@ DEX
 MODE            SYNTAX          HEX     LEN
                 DEX             $CB     1
                 
-Affects Flags: Z := Result != 0, N := Result < A
+Affects Flags: Z := Result == 0, N := Result < A
 
 SEI
 ---
 
 MODE            SYNTAX          HEX     LEN
-                SEI             $B0     1
+                SEI             $80     1
                 
 Affects Flags: I := 1
                 
@@ -364,7 +380,7 @@ CLI
 ---
 
 MODE            SYNTAX          HEX     LEN
-                CLI             $B1     1
+                CLI             $81     1
                 
 Affects Flags: I := 0
 
@@ -372,10 +388,10 @@ NOP
 ---
 
 MODE            SYNTAX          HEX     LEN
-                NOP             $B2     1
+                NOP             $82     1
 
 HLT
 ---
 
 MODE            SYNTAX          HEX     LEN
-                HLT             $B3     1
+                HLT             $83     1
