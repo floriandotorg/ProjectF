@@ -374,9 +374,17 @@ int main(int argc, char *argv[])
       }
     }
 
+    puts("Register Dump:");
+    printf("A  = %08x\n", cpu->a);
+    printf("X  = %08x\n", cpu->x);
+    printf("PC = %08x\n", cpu->pc);
+    printf("SP = %08x\n", cpu->sp);
+    printf("z  = %01d\n", cpu->z);
+    printf("n  = %01d\n", cpu->n);
+    printf("i  = %01d\n", cpu->i);
+
     free(cpu);
     cpu = NULL;
 
-    puts("Hallo Welt!");
     return 0;
 }
