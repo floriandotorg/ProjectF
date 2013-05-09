@@ -184,10 +184,10 @@ OR
 ---
 
 MODE            SYNTAX          HEX     LEN
-Immediate       OR #10          $F0     5
-Absolute        OR $10          $F1     5
-Indirect,X      OR ($10,X)      $F2     5
-Indirect,Off    OR ($10),X      $F3     5
+Immediate       OR #10          $F4     5
+Absolute        OR $10          $F5     5
+Indirect,X      OR ($10,X)      $F6     5
+Indirect,Off    OR ($10),X      $F7     5
 
 Affects Flags: Z := Result != 0
 
@@ -195,10 +195,10 @@ XOR
 ---
 
 MODE            SYNTAX          HEX     LEN
-Immediate       XOR #10         $F4     5
-Absolute        XOR $10         $F5     5
-Indirect,X      XOR ($10,X)     $F6     5
-Indirect,Off    XOR ($10),X     $F7     5
+Immediate       XOR #10         $F8     5
+Absolute        XOR $10         $F9     5
+Indirect,X      XOR ($10,X)     $FA     5
+Indirect,Off    XOR ($10),X     $FB     5
 
 Affects Flags: Z := Result != 0
 
@@ -206,10 +206,10 @@ ROR
 ---
 
 MODE            SYNTAX          HEX     LEN
-Immediate       ROR #10         $F8     5
-Absolute        ROR $10         $F9     5
-Indirect,X      ROR ($10,X)     $FA     5
-Indirect,Off    ROR ($10),X     $FB     5
+Immediate       ROR #10         $FC     5
+Absolute        ROR $10         $FD     5
+Indirect,X      ROR ($10,X)     $FE     5
+Indirect,Off    ROR ($10),X     $FF     5
 
 Affects Flags: Z := Result != 0
 
@@ -217,10 +217,10 @@ ROL
 ---
 
 MODE            SYNTAX          HEX     LEN
-Immediate       ROL #10         $F8     5
-Absolute        ROL $10         $F9     5
-Indirect,X      ROL ($10,X)     $FA     5
-Indirect,Off    ROL ($10),X     $FB     5
+Immediate       ROL #10         $E1     5
+Absolute        ROL $10         $E2     5
+Indirect,X      ROL ($10,X)     $E3     5
+Indirect,Off    ROL ($10),X     $E4     5
 
 Affects Flags: Z := Result != 0
 
@@ -228,10 +228,10 @@ LSR
 ---
 
 MODE            SYNTAX          HEX     LEN
-Immediate       LSR #10         $F8     5
-Absolute        LSR $10         $F9     5
-Indirect,X      LSR ($10,X)     $FA     5
-Indirect,Off    LSR ($10),X     $FB     5
+Immediate       LSR #10         $E5     5
+Absolute        LSR $10         $E6     5
+Indirect,X      LSR ($10,X)     $E7     5
+Indirect,Off    LSR ($10),X     $E8     5
 
 Affects Flags: Z := Result != 0
 
@@ -239,10 +239,10 @@ LSL
 ---
 
 MODE            SYNTAX          HEX     LEN
-Immediate       LSL #10         $FC     5
-Absolute        LSL $10         $FD     5
-Indirect,X      LSL ($10,X)     $FE     5
-Indirect,Off    LSL ($10),X     $FF     5
+Immediate       LSL #10         $E9     5
+Absolute        LSL $10         $EA     5
+Indirect,X      LSL ($10,X)     $EB     5
+Indirect,Off    LSL ($10),X     $EC     5
 
 Affects Flags: Z := Result != 0
 
@@ -250,10 +250,10 @@ ADD
 ---
 
 MODE            SYNTAX          HEX     LEN
-Immediate       ADD #10         $E0     5
-Absolute        ADD $10         $E1     5
-Indirect,X      ADD ($10,X)     $E2     5
-Indirect,Off    ADD ($10),X     $E3     5
+Immediate       ADD #10         $C0     5
+Absolute        ADD $10         $C1     5
+Indirect,X      ADD ($10,X)     $C2     5
+Indirect,Off    ADD ($10),X     $C3     5
 
 Affects Flags: Z := Result != 0, N
 
@@ -261,10 +261,10 @@ CMP
 ---
 
 MODE            SYNTAX          HEX     LEN
-Immediate       CMP #10         $E4     5
-Absolute        CMP $10         $E5     5
-Indirect,X      CMP ($10,X)     $E6    5
-Indirect,Off    CMP ($10),X     $E7     5
+Immediate       CMP #10         $C4     5
+Absolute        CMP $10         $C5     5
+Indirect,X      CMP ($10,X)     $C6    5
+Indirect,Off    CMP ($10),X     $C7     5
 
 Affects Flags: Z := Result != 0, N := Result < A
 
@@ -282,9 +282,9 @@ BNE
 Branch if Zero == 0
 
 MODE            SYNTAX          HEX     LEN
-Absolute        BNE $10         $D0     5
-Indirect,X      BNE ($10,X)     $D1     5
-Indirect,Off    BNE ($10),X     $D2     5
+Absolute        BNE $10         $D3     5
+Indirect,X      BNE ($10,X)     $D4     5
+Indirect,Off    BNE ($10),X     $D5     5
 
 BGT
 ---
@@ -292,9 +292,9 @@ BGT
 Branch if Zero == 1, Negative == 0
 
 MODE            SYNTAX          HEX     LEN
-Absolute        BGT $10         $D3     5
-Indirect,X      BGT ($10,X)     $D4     5
-Indirect,Off    BGT ($10),X     $D5     5
+Absolute        BGT $10         $D6     5
+Indirect,X      BGT ($10,X)     $D7     5
+Indirect,Off    BGT ($10),X     $D8     5
 
 BLT
 ---
@@ -302,29 +302,29 @@ BLT
 Branch if Zero == 1, Negative == 1
 
 MODE            SYNTAX          HEX     LEN
-Absolute        BLT $10         $D6     5
-Indirect,X      BLT ($10,X)     $D7     5
-Indirect,Off    BLT ($10),X     $D8     5
+Absolute        BLT $10         $D9     5
+Indirect,X      BLT ($10,X)     $DA     5
+Indirect,Off    BLT ($10),X     $DB     5
 
 JTS
 ---
 
 MODE            SYNTAX          HEX     LEN
-Absolute        JTS $10         $D9     5
-Indirect,X      JTS ($10,X)     $DA     5
-Indirect,Off    JTS ($10),X     $DB     5
+Absolute        JTS $10         $DC     5
+Indirect,X      JTS ($10,X)     $DD     5
+Indirect,Off    JTS ($10),X     $DE     5
 
 RTS
 ---
 
 MODE            SYNTAX          HEX     LEN
-                RTS             $DC     1
+                RTS             $DF     1
 
 INA
 ---
 
 MODE            SYNTAX          HEX     LEN
-                INA             $E8     1
+                INA             $C8     1
                 
 Affects Flags: Z := Result != 0, N := Result < A
 
@@ -332,7 +332,7 @@ INX
 ---
 
 MODE            SYNTAX          HEX     LEN
-                INX             $E9     1
+                INX             $C9     1
                 
 Affects Flags: Z := Result != 0, N := Result < A
 
@@ -340,7 +340,7 @@ DEA
 ---
 
 MODE            SYNTAX          HEX     LEN
-                DEA             $EA     1
+                DEA             $CA     1
                 
 Affects Flags: Z := Result != 0, N := Result < A
 
@@ -348,7 +348,7 @@ DEX
 ---
 
 MODE            SYNTAX          HEX     LEN
-                DEX             $EB     1
+                DEX             $CB     1
                 
 Affects Flags: Z := Result != 0, N := Result < A
 
