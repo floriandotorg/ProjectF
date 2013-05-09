@@ -1,0 +1,141 @@
+Register
+a,x a=ALU, x=INDEX, PC, SP
+
+LD[A,X]//? Zero = [A,X] == 0
+ST[A,X]
+
+TXA
+TAX
+
+TXS
+TSX
+
+PUA
+PUX
+
+POA
+POX
+
+AND
+OR
+XOR
+(NOT -> XOR #FFFFFFFF)
+
+ROR
+ROL
+
+LSR
+LSL
+
+ADD P; A += P
+
+CMP P : Zero := P != A, Negative := P < A
+
+JMP
+BNE: Branch if Zero == 0
+BEQ: Branch if Zero == 1
+BGT: Branch if Zero == 1, Negative == 0
+BLT: Branch if Zero == 1, Negative == 1
+
+JTS
+RTS
+
+INA; Zero = A == 0
+INX; Zero = X == 0
+DEA; Zero = A == 0
+DEX; Zero = X == 0
+
+SEI: Interrupt = 1
+CLI: Interrupt = 0
+
+NOP
+HLT
+
+Addressing Modes:
+Immediate: #value
+Absolute: $address
+Indirect,X: ($address,X)
+Indirect,Offset X: ($address),X
+
+Flags
+Zero
+Negative
+Interrupt
+
+Memory Layout
+*------------------------------------------* $0000 0000 - $00FF FFFF
+*
+*
+*       16 MiB RAM
+*
+*
+*---------------------------------------- * $0100 0000 - $01FF FFFF
+*
+*
+*       16 MiB Flash
+*
+*
+*----------------------------------------*
+
+*---------------------------------------- * $FF00 0000 - $FFFF FFFF
+*
+*     Sonstiges:
+*       * Peripherie
+*       * IV
+*
+*----------------------------------------*
+
+Interrupt-Vektoren
+
+[$FFA0 0010] UART RX Complete
+[$FFA0 0011] UART TX Complete
+
+Peripherie
+
+[$FF00 0000] 7-Segementanzeige 1
+[$FF00 0001] 7-Segementanzeige 2
+[$FF00 0002] UART Status
+[$FF00 0003] UART Wert
+[$FF00 0004] UART Baudrate (Taktrate/Baudrate*16) - 1
+[$FF00 0005-$FF00 0008] CPU Taktfrequenz (RO)
+
+Start-Zustand
+
+PC = $0
+SP = $01FF FFFF
+X = #0
+A = #0
+Negativ = 0
+Zero = 0
+Interrupt = 1
+
+UART Status
+
+Bit
+0    UART Receive Complete
+1    UART Transmit Complete
+2    RX Complete Interrupt Enable
+3    TX Complete Interrupt Enable
+4    Receiver Enable
+5    Transmitter Enable
+6    Data Over Run Error
+7    Error
+
+Beispiele
+
+LDX #100
+kopf:
+DEX
+BNE kopf
+
+LDX #1000
+INX
+LDA ($0,X)
+
+
+
+X element [1000, 0111]
+0 = 0000
+1 = 0001
+1er kom. -1 = 1110
+2er komp = 1er komp + #1 (für neg. Zahlen) -> 1111
