@@ -2,7 +2,7 @@ RM=rm
 CC=gcc
 CFLAGS=-c -Wall
 LDFLAGS=
-SOURCES=main.c
+SOURCES=fsim.c
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=fsim
  
