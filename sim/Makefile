@@ -16,4 +16,5 @@ $(EXECUTABLE): $(OBJECTS)
  
 clean:
 	$(RM) -f $(OBJECTS)
+	$(RM) -f $(EXECUTABLE)
 	$(RM) -f $(EXECUTABLE).exe
