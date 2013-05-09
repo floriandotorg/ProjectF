@@ -1,68 +1,6 @@
-Register
-a,x a=ALU, x=INDEX, PC, SP
-
-LD[A,X]//? Zero = [A,X] == 0
-ST[A,X]
-
-TXA
-TAX
-
-TXS
-TSX
-
-PUA
-PUX
-
-POA
-POX
-
-AND
-OR
-XOR
-(NOT -> XOR #FFFFFFFF)
-
-ROR
-ROL
-
-LSR
-LSL
-
-ADD P; A += P
-
-CMP P : Zero := P != A, Negative := P < A
-
-JMP
-BNE: Branch if Zero == 0
-BEQ: Branch if Zero == 1
-BGT: Branch if Zero == 1, Negative == 0
-BLT: Branch if Zero == 1, Negative == 1
-
-JTS
-RTS
-
-INA; Zero = A == 0
-INX; Zero = X == 0
-DEA; Zero = A == 0
-DEX; Zero = X == 0
-
-SEI: Interrupt = 1
-CLI: Interrupt = 0
-
-NOP
-HLT
-
-Addressing Modes:
-Immediate: #value
-Absolute: $address
-Indirect,X: ($address,X)
-Indirect,Offset X: ($address),X
-
-Flags
-Zero
-Negative
-Interrupt
-
 Memory Layout
+-------------
+
 *------------------------------------------* $0000 0000 - $00FF FFFF
 *
 *
@@ -86,11 +24,13 @@ Memory Layout
 *----------------------------------------*
 
 Interrupt-Vektoren
+------------------
 
 [$FFA0 0010] UART RX Complete
 [$FFA0 0011] UART TX Complete
 
 Peripherie
+----------
 
 [$FF00 0000] 7-Segementanzeige 1
 [$FF00 0001] 7-Segementanzeige 2
@@ -99,17 +39,8 @@ Peripherie
 [$FF00 0004] UART Baudrate (Taktrate/Baudrate*16) - 1
 [$FF00 0005-$FF00 0008] CPU Taktfrequenz (RO)
 
-Start-Zustand
-
-PC = $0
-SP = $01FF FFFF
-X = #0
-A = #0
-Negativ = 0
-Zero = 0
-Interrupt = 1
-
 UART Status
+-----------
 
 Bit
 0    UART Receive Complete
@@ -121,21 +52,330 @@ Bit
 6    Data Over Run Error
 7    Error
 
-Beispiele
+Register
+--------
 
-LDX #100
-kopf:
-DEX
-BNE kopf
+A=ALU, X=INDEX, PC, SP
 
-LDX #1000
+Addressing Modes
+----------------
+
+Immediate: #value
+Absolute: $address
+Indirect,X: ($address,X)
+Indirect,Offset X: ($address),X
+
+Flags
+-----
+
+[Z]ero
+[N]egative
+[I]nterrupt
+
+Start-Zustand
+-------------
+
+PC = $0
+SP = $01FF FFFF
+X = #0
+A = #0
+N = 0
+Z = 0
+I = 1
+
+LDA
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       LDA #10         $AF     5
+Absolute        LDA $10         $AE     5
+Indirect,X      LDA ($10,X)     $AD     5
+Indirect,Off    LDA ($10),X     $AC     5
+
+Affects Flags: Z := Result != 0
+
+LDX
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       LDX #10         $A0     5
+Absolute        LDX $10         $A1     5
+Indirect,X      LDX ($10,X)     $A2     5
+Indirect,Off    LDX ($10),X     $A3     5
+
+Affects Flags: Z := Result != 0
+
+TXA
+---
+
+MODE            SYNTAX          HEX     LEN
+                TXA             $A9     1
+
+Affects Flags: Z := Result != 0
+
+TAX
+---
+
+MODE            SYNTAX          HEX     LEN
+                TAX             $AA     1
+
+Affects Flags: Z := Result != 0
+
+TXS
+---
+
+MODE            SYNTAX          HEX     LEN
+                TXS             $B0     1
+
+Affects Flags: Z := Result != 0
+
+TSX
+---
+
+MODE            SYNTAX          HEX     LEN
+                TSX             $B1     1
+
+Affects Flags: Z := Result != 0
+
+PUA
+---
+
+MODE            SYNTAX          HEX     LEN
+                PUA             $B2     1
+
+Affects Flags: Z := Result != 0
+
+PUX
+---
+
+MODE            SYNTAX          HEX     LEN
+                PUX             $B3     1
+
+Affects Flags: Z := Result != 0
+
+POA
+---
+
+MODE            SYNTAX          HEX     LEN
+                POA             $B4     1
+
+Affects Flags: Z := Result != 0
+
+POX
+---
+
+MODE            SYNTAX          HEX     LEN
+                POX             $B5     1
+
+Affects Flags: Z := Result != 0
+
+AND
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       AND #10         $F0     5
+Absolute        AND $10         $F1     5
+Indirect,X      AND ($10,X)     $F2     5
+Indirect,Off    AND ($10),X     $F3     5
+
+Affects Flags: Z := Result != 0
+
+OR
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       OR #10          $F0     5
+Absolute        OR $10          $F1     5
+Indirect,X      OR ($10,X)      $F2     5
+Indirect,Off    OR ($10),X      $F3     5
+
+Affects Flags: Z := Result != 0
+
+XOR
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       XOR #10         $F4     5
+Absolute        XOR $10         $F5     5
+Indirect,X      XOR ($10,X)     $F6     5
+Indirect,Off    XOR ($10),X     $F7     5
+
+Affects Flags: Z := Result != 0
+
+ROR
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       ROR #10         $F8     5
+Absolute        ROR $10         $F9     5
+Indirect,X      ROR ($10,X)     $FA     5
+Indirect,Off    ROR ($10),X     $FB     5
+
+Affects Flags: Z := Result != 0
+
+ROL
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       ROL #10         $F8     5
+Absolute        ROL $10         $F9     5
+Indirect,X      ROL ($10,X)     $FA     5
+Indirect,Off    ROL ($10),X     $FB     5
+
+Affects Flags: Z := Result != 0
+
+LSR
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       LSR #10         $F8     5
+Absolute        LSR $10         $F9     5
+Indirect,X      LSR ($10,X)     $FA     5
+Indirect,Off    LSR ($10),X     $FB     5
+
+Affects Flags: Z := Result != 0
+
+LSL
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       LSL #10         $FC     5
+Absolute        LSL $10         $FD     5
+Indirect,X      LSL ($10,X)     $FE     5
+Indirect,Off    LSL ($10),X     $FF     5
+
+Affects Flags: Z := Result != 0
+
+ADD
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       ADD #10         $E0     5
+Absolute        ADD $10         $E1     5
+Indirect,X      ADD ($10,X)     $E2     5
+Indirect,Off    ADD ($10),X     $E3     5
+
+Affects Flags: Z := Result != 0, N
+
+CMP
+---
+
+MODE            SYNTAX          HEX     LEN
+Immediate       CMP #10         $E4     5
+Absolute        CMP $10         $E5     5
+Indirect,X      CMP ($10,X)     $E6    5
+Indirect,Off    CMP ($10),X     $E7     5
+
+Affects Flags: Z := Result != 0, N := Result < A
+
+JMP
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        CMP $10         $D0     5
+Indirect,X      CMP ($10,X)     $D1     5
+Indirect,Off    CMP ($10),X     $D2     5
+
+BNE
+---
+
+Branch if Zero == 0
+
+MODE            SYNTAX          HEX     LEN
+Absolute        BNE $10         $D0     5
+Indirect,X      BNE ($10,X)     $D1     5
+Indirect,Off    BNE ($10),X     $D2     5
+
+BGT
+---
+
+Branch if Zero == 1, Negative == 0
+
+MODE            SYNTAX          HEX     LEN
+Absolute        BGT $10         $D3     5
+Indirect,X      BGT ($10,X)     $D4     5
+Indirect,Off    BGT ($10),X     $D5     5
+
+BLT
+---
+
+Branch if Zero == 1, Negative == 1
+
+MODE            SYNTAX          HEX     LEN
+Absolute        BLT $10         $D6     5
+Indirect,X      BLT ($10,X)     $D7     5
+Indirect,Off    BLT ($10),X     $D8     5
+
+JTS
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        JTS $10         $D9     5
+Indirect,X      JTS ($10,X)     $DA     5
+Indirect,Off    JTS ($10),X     $DB     5
+
+RTS
+---
+
+MODE            SYNTAX          HEX     LEN
+                RTS             $DC     1
+
+INA
+---
+
+MODE            SYNTAX          HEX     LEN
+                INA             $E8     1
+                
+Affects Flags: Z := Result != 0, N := Result < A
+
 INX
-LDA ($0,X)
+---
 
+MODE            SYNTAX          HEX     LEN
+                INX             $E9     1
+                
+Affects Flags: Z := Result != 0, N := Result < A
 
+DEA
+---
 
-X element [1000, 0111]
-0 = 0000
-1 = 0001
-1er kom. -1 = 1110
-2er komp = 1er komp + #1 (für neg. Zahlen) -> 1111
+MODE            SYNTAX          HEX     LEN
+                DEA             $EA     1
+                
+Affects Flags: Z := Result != 0, N := Result < A
+
+DEX
+---
+
+MODE            SYNTAX          HEX     LEN
+                DEX             $EB     1
+                
+Affects Flags: Z := Result != 0, N := Result < A
+
+SEI
+---
+
+MODE            SYNTAX          HEX     LEN
+                SEI             $B0     1
+                
+Affects Flags: I := 1
+                
+CLI
+---
+
+MODE            SYNTAX          HEX     LEN
+                CLI             $B1     1
+                
+Affects Flags: I := 0
+
+NOP
+---
+
+MODE            SYNTAX          HEX     LEN
+                NOP             $B2     1
+
+HLT
+---
+
+MODE            SYNTAX          HEX     LEN
+                HLT             $B3     1
