@@ -76,7 +76,7 @@ Start-Zustand
 -------------
 
 PC = $0
-SP = $01FF FFFF
+SP = $00FF FFFF
 X = #0
 A = #0
 N = 0

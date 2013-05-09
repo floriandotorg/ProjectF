@@ -53,6 +53,20 @@ uint32_t ind_off_x(cpu_t *cpu)
     return *val(*val(imm(cpu), cpu) + cpu->x, cpu);
 }
 
+void dump_stack(cpu_t *cpu)
+{
+    int entries = 0x00FFFFFF - cpu->sp;
+    printf("Dump: %d entries (max 10 shown)\n", entries);
+    if (entries > 10)
+    {
+        entries = 10;
+    }
+    for (;entries > 0;entries--)
+    {
+        printf("%08x = 0x%02x\n", 0x00FFFFFF - entries, cpu->ram[0x00FFFFFF - entries]);
+    }
+}
+
 int main(int argc, char *argv[])
 {
     unsigned char opcode = 0x00;
@@ -95,7 +109,7 @@ int main(int argc, char *argv[])
     cpu->a = 0;
     cpu->x = 0;
     cpu->pc = 0x01000000;
-    cpu->sp = 0x01FFFFFF;
+    cpu->sp = 0x00FFFFFF;
     cpu->z = 0;
     cpu->n = 0;
     cpu->i = 1; // By default off → no interrupt table defined
@@ -382,6 +396,7 @@ int main(int argc, char *argv[])
     printf("z  = %01d\n", cpu->z);
     printf("n  = %01d\n", cpu->n);
     printf("i  = %01d\n", cpu->i);
+    dump_stack(cpu);
 
     free(cpu);
     cpu = NULL;
