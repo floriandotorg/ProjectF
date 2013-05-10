@@ -34,10 +34,10 @@ Peripherie
 [$FF00 0001] 7-Segementanzeige 1 (w)
 [$FF00 0002] 7-Segementanzeige 2 (w)
 [$FF00 0003] UART Status (r/d)
-[$FF00 0003] UART Control (w)
-[$FF00 0004] UART Baudrate (Taktrate/Baudrate*16) - 1 (w)
-[$FF00 0005] UART Send (w)
-[$FF00 0006] UART Recv (r/d)
+[$FF00 0004] UART Control (w)
+[$FF00 0005] UART Baudrate (Taktrate/Baudrate*16) - 1 (w)
+[$FF00 0006] UART Send (w)
+[$FF00 0007] UART Recv (r/d)
 [$FF00 000A-$FF00 000D] CPU Taktfrequenz (r)
 
 [$FF00 00F0] General Interrupt Vector
