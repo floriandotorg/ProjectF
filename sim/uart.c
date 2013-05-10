@@ -58,7 +58,7 @@ uart_t* uart_create()
 void uart_write_send(uart_t* uart, uint8_t val)
 {
     // uart tx enabled
-    if(uart->control & (1<<1))
+    if(uart->control & (1<<3))
     {
         putc(val, stdout);
         uart->status |= (1<<1);
