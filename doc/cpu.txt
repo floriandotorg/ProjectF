@@ -40,7 +40,7 @@ Peripherie
 [$FF00 0007] UART Recv (r/d)
 [$FF00 000A-$FF00 000D] CPU Taktfrequenz (r)
 
-[$FF00 00F0] General Interrupt Vector
+[$FF00 00E0-$FF00 00E3] General Interrupt Vector
 [$FF00 00F1] Interrupt Flags
 
 Interrupt Flags
@@ -95,7 +95,7 @@ X = #0
 A = #0
 N = 0
 Z = 0
-I = 1
+I = 0
 
 LDAB
 ---
@@ -219,6 +219,12 @@ MODE            SYNTAX          HEX     LEN
 
 Affects Flags: Z := Result == 0
 
+PUF
+---
+
+MODE            SYNTAX          HEX     LEN
+                PUF             $B6     1
+
 POA
 ---
 
@@ -234,6 +240,14 @@ MODE            SYNTAX          HEX     LEN
                 POX             $B5     1
 
 Affects Flags: Z := Result == 0
+
+POF
+---
+
+MODE            SYNTAX          HEX     LEN
+                POF             $B7     1
+                
+Affects Flags: Z,N,I
 
 AND
 ---
@@ -395,6 +409,12 @@ RTS
 
 MODE            SYNTAX          HEX     LEN
                 RTS             $BF     1
+                
+RTI
+---
+
+MODE            SYNTAX          HEX     LEN
+                RTI             $B8     1
 
 INA
 ---
