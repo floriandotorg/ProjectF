@@ -19,6 +19,7 @@ typedef struct {
     uint8_t i;
     uint8_t ram[0x01000000];
     uint8_t flash[0x01000000];
+    uint8_t periphery[0x01000000];
 } cpu_t;
 
 const uint32_t stack_pointer_start = 0x00FFFFFC;
@@ -29,36 +30,129 @@ uint32_t *ram(uint32_t a, cpu_t *cpu)
     return (uint32_t *) &cpu->ram[a];
 }
 
-uint32_t *val(uint32_t a, cpu_t *cpu)
+uint8_t read_byte_part(uint8_t part, uint32_t part_address, cpu_t *cpu)
 {
-    if (a < 0x01000000) {
-        return ram(a, cpu);
-    } else if (a < 0x02000000) {
-        return (uint32_t *) &cpu->flash[a - 0x01000000];
-    } else {
-        printf("Invalid adress %08x\n", a);
+    if ((part_address & 0xFF000000) != 0)
+    {
+        printf("Accessing outside the part %06x in %02x\n", part_address, part);
+        return 0;
+    }
+    switch (part) {
+    case 0x00: // RAM
+        return cpu->ram[part_address];
+    case 0x01: // Flash
+        return cpu->flash[part_address];
+    case 0xFF: // Periphery
+        return cpu->periphery[part_address];
+    default:
+        printf("Invalid adress %08x\n", ((uint32_t) part << 24) | part_address);
         return 0;
     }
 }
 
-uint32_t *imm(cpu_t *cpu)
+uint8_t read_byte(uint32_t address, cpu_t *cpu)
 {
-    uint32_t *value = val(cpu->pc, cpu);
+    uint8_t part = (address & 0xFF000000) >> 24;
+    uint32_t part_address = address & 0x00FFFFFF;
+
+    return read_byte_part(part, part_address, cpu);
+}
+
+uint32_t read(uint32_t address, cpu_t *cpu)
+{
+    uint8_t part = (address & 0xFF000000) >> 24;
+    uint32_t part_address = address & 0x00FFFFFF;
+
+    uint32_t value = 0;
+    uint8_t i = 0;
+    for (; i < 4; i++)
+    {
+        value |= (uint32_t) read_byte_part(part, part_address + i, cpu) << (i * 8);
+    }
     return value;
 }
 
-uint32_t *absolute(cpu_t *cpu)
+void write_byte_part(uint8_t part, uint32_t part_address, uint8_t value, cpu_t *cpu)
 {
-    return val(*imm(cpu), cpu);
+    if ((part_address & 0xFF000000) != 0)
+    {
+        printf("Accessing outside the part %06x in %02x\n", part_address, part);
+        return;
+    }
+    else
+    {
+        switch (part) {
+        case 0x00: // RAM
+            cpu->ram[part_address] = value;
+            break;
+        case 0x01: // Flash
+            cpu->flash[part_address] = value;
+            break;
+        case 0xFF: // Periphery
+            cpu->periphery[part_address] = value;
+            break;
+        default:
+            printf("Invalid adress %08x\n", ((uint32_t) part << 24) | part_address);
+            break;
+        }
+    }
 }
 
-uint32_t *ind_x(cpu_t *cpu) {
-    return val(*val(*imm(cpu) + cpu->x, cpu), cpu);
+void write_byte(uint32_t address, uint8_t value, cpu_t *cpu)
+{
+    uint8_t part = (address & 0xFF000000) >> 24;
+    uint32_t part_address = address & 0x00FFFFFF;
+
+    write_byte_part(part, part_address, value, cpu);
 }
 
-uint32_t *ind_off_x(cpu_t *cpu)
+void write(uint32_t address, uint32_t value, cpu_t *cpu)
 {
-    return val(*val(*imm(cpu), cpu) + cpu->x, cpu);
+    uint8_t part = (address & 0xFF000000) >> 24;
+    uint32_t part_address = address & 0x00FFFFFF;
+
+    uint8_t i = 0;
+    for (; i < 4; i++)
+    {
+         write_byte_part(part, part_address, value & 0xFF, cpu);
+         value >>= 8;
+    }
+}
+
+uint32_t imm(cpu_t *cpu)
+{
+    uint32_t value = read(cpu->pc, cpu);
+    cpu->pc += 4;
+    return value;
+}
+
+uint32_t abs_address(cpu_t *cpu)
+{
+    return imm(cpu);
+}
+
+uint32_t ind_x_address(cpu_t *cpu)
+{
+    return read(imm(cpu) + cpu->x, cpu);
+}
+
+uint32_t ind_off_x_address(cpu_t *cpu)
+{
+    return read(imm(cpu), cpu) + cpu->x;
+}
+
+uint32_t absolute(cpu_t *cpu)
+{
+    return read(abs_address(cpu), cpu);
+}
+
+uint32_t ind_x(cpu_t *cpu) {
+    return read(ind_x_address(cpu), cpu);
+}
+
+uint32_t ind_off_x(cpu_t *cpu)
+{
+    return read(ind_off_x_address(cpu), cpu);
 }
 
 void jump(uint8_t mode, cpu_t *cpu)
@@ -66,13 +160,13 @@ void jump(uint8_t mode, cpu_t *cpu)
     switch (mode)
     {
         case 0:
-            cpu->pc = *imm(cpu);
+            cpu->pc = imm(cpu);
             break;
         case 1:
-            cpu->pc = *val(*imm(cpu) + cpu->x, cpu);
+            cpu->pc = ind_x_address(cpu);
             break;
         case 2:
-            cpu->pc = *val(*imm(cpu), cpu) + cpu->x;
+            cpu->pc = ind_off_x_address(cpu);
             break;
         default :
             printf("Unknown jump mode %d\n", mode);
@@ -280,101 +374,107 @@ int main(int argc, char *argv[])
     printf("%08x\n", cpu->pc);*/
 
     while(!halted) {
-      opcode = (uint8_t) *val(cpu->pc++, cpu);
+      opcode = read_byte(cpu->pc++, cpu);
       switch (opcode) {
       // LDAB
       case 0x7F:
-        load_byte(&cpu->a, *absolute(cpu));
+        load_byte(&cpu->a, read_byte(abs_address(cpu), cpu));
+        set_zero_a(cpu);
         break;
       case 0x7E:
-        load_byte(&cpu->a, *ind_x(cpu));
+        load_byte(&cpu->a, read_byte(ind_x_address(cpu), cpu));
+        set_zero_a(cpu);
         break;
       case 0x7D:
-        load_byte(&cpu->a, *ind_off_x(cpu));
+        load_byte(&cpu->a, read_byte(ind_off_x_address(cpu), cpu));
+        set_zero_a(cpu);
         break;
       // LDXB
       case 0x70:
-        load_byte(&cpu->x, *absolute(cpu));
+        load_byte(&cpu->x, read_byte(abs_address(cpu), cpu));
+        set_zero_x(cpu);
         break;
       case 0x71:
-        load_byte(&cpu->x, *ind_x(cpu));
+        load_byte(&cpu->x, read_byte(ind_x_address(cpu), cpu));
+        set_zero_x(cpu);
         break;
       case 0x72:
-        load_byte(&cpu->x, *ind_off_x(cpu));
+        load_byte(&cpu->x, read_byte(ind_off_x_address(cpu), cpu));
+        set_zero_x(cpu);
         break;
       // STAB
       case 0x60:
-        load_byte(absolute(cpu), cpu->a);
+        write_byte(abs_address(cpu), cpu->a, cpu);
         break;
       case 0x61:
-        load_byte(ind_x(cpu), cpu->a);
+        write_byte(ind_x_address(cpu), cpu->a, cpu);
         break;
       case 0x62:
-        load_byte(ind_off_x(cpu), cpu->a);
+        write_byte(ind_off_x_address(cpu), cpu->a, cpu);
         break;
       // STXB
       case 0x6F:
-        load_byte(absolute(cpu), cpu->x);
+        write_byte(abs_address(cpu), cpu->x, cpu);
         break;
       case 0x6E:
-        load_byte(ind_x(cpu), cpu->x);
+        write_byte(ind_x_address(cpu), cpu->x, cpu);
         break;
       case 0x6D:
-        load_byte(ind_off_x(cpu), cpu->x);
+        write_byte(ind_off_x_address(cpu), cpu->x, cpu);
         break;
       // LDA
       case 0xAF:
-        cpu->a = *imm(cpu);
+        cpu->a = imm(cpu);
         set_zero_a(cpu);
         break;
       case 0xAE:
-        cpu->a = *absolute(cpu);
+        cpu->a = absolute(cpu);
         set_zero_a(cpu);
         break;
       case 0xAD:
-        cpu->a = *ind_x(cpu);
+        cpu->a = ind_x(cpu);
         set_zero_a(cpu);
         break;
       case 0xAC:
-        cpu->a = *ind_off_x(cpu);
+        cpu->a = ind_off_x(cpu);
         set_zero_a(cpu);
         break;
       // LDX
       case 0xA0:
-        cpu->x = *imm(cpu);
+        cpu->x = imm(cpu);
         set_zero_x(cpu);
         break;
       case 0xA1:
-        cpu->x = *absolute(cpu);
+        cpu->x = absolute(cpu);
         set_zero_x(cpu);
         break;
       case 0xA2:
-        cpu->x = *ind_x(cpu);
+        cpu->x = ind_x(cpu);
         set_zero_x(cpu);
         break;
       case 0xA3:
-        cpu->x = *ind_off_x(cpu);
+        cpu->x = ind_off_x(cpu);
         set_zero_x(cpu);
         break;
       // STA
       case 0x90:
-        *absolute(cpu) = cpu->a;
+        write(abs_address(cpu), cpu->a, cpu);
         break;
       case 0x91:
-        *ind_x(cpu) = cpu->a;
+        write(ind_x_address(cpu), cpu->a, cpu);
         break;
       case 0x92:
-        *ind_off_x(cpu) = cpu->a;
+        write(ind_off_x_address(cpu), cpu->a, cpu);
         break;
       // STX
       case 0x9D:
-        *absolute(cpu) = cpu->x;
+        write(abs_address(cpu), cpu->x, cpu);
         break;
       case 0x9E:
-        *ind_x(cpu) = cpu->x;
+        write(ind_x_address(cpu), cpu->x, cpu);
         break;
       case 0x9F:
-        *ind_off_x(cpu) = cpu->x;
+        write(ind_off_x_address(cpu), cpu->x, cpu);
         break;
       // TXA
       case 0xA9:
@@ -418,144 +518,144 @@ int main(int argc, char *argv[])
         break;
       // AND
       case 0xF0:
-        cpu->a = cpu->a & *imm(cpu);
+        cpu->a = cpu->a & imm(cpu);
         set_zero_a(cpu);
         break;
       case 0xF1:
-        cpu->a = cpu->a & *absolute(cpu);
+        cpu->a = cpu->a & absolute(cpu);
         set_zero_a(cpu);
         break;
       case 0xF2:
-        cpu->a = cpu->a & *ind_x(cpu);
+        cpu->a = cpu->a & ind_x(cpu);
         set_zero_a(cpu);
         break;
       case 0xF3:
-        cpu->a = cpu->a & *ind_off_x(cpu);
+        cpu->a = cpu->a & ind_off_x(cpu);
         set_zero_a(cpu);
         break;
       // OR
       case 0xF4:
-        cpu->a = cpu->a | *imm(cpu);
+        cpu->a = cpu->a | imm(cpu);
         set_zero_a(cpu);
         break;
       case 0xF5:
-        cpu->a = cpu->a | *absolute(cpu);
+        cpu->a = cpu->a | absolute(cpu);
         set_zero_a(cpu);
         break;
       case 0xF6:
-        cpu->a = cpu->a | *ind_x(cpu);
+        cpu->a = cpu->a | ind_x(cpu);
         set_zero_a(cpu);
         break;
       case 0xF7:
-        cpu->a = cpu->a | *ind_off_x(cpu);
+        cpu->a = cpu->a | ind_off_x(cpu);
         set_zero_a(cpu);
         break;
       // XOR
       case 0xF8:
-        cpu->a = cpu->a ^ *imm(cpu);
+        cpu->a = cpu->a ^ imm(cpu);
         set_zero_a(cpu);
         break;
       case 0xF9:
-        cpu->a = cpu->a ^ *absolute(cpu);
+        cpu->a = cpu->a ^ absolute(cpu);
         set_zero_a(cpu);
         break;
       case 0xFA:
-        cpu->a = cpu->a ^ *ind_x(cpu);
+        cpu->a = cpu->a ^ ind_x(cpu);
         set_zero_a(cpu);
         break;
       case 0xFB:
-        cpu->a = cpu->a ^ *ind_off_x(cpu);
+        cpu->a = cpu->a ^ ind_off_x(cpu);
         set_zero_a(cpu);
         break;
       // ROR
       case 0xFC:
-        rot(*imm(cpu), cpu);
+        rot(imm(cpu), cpu);
         break;
       case 0xFD:
-        rot(*absolute(cpu), cpu);
+        rot(absolute(cpu), cpu);
         break;
       case 0xFE:
-        rot(*ind_x(cpu), cpu);
+        rot(ind_x(cpu), cpu);
         break;
       case 0xFF:
-        rot(*ind_off_x(cpu), cpu);
+        rot(ind_off_x(cpu), cpu);
         break;
       // ROL
       case 0xE1:
-        rot(32 - *imm(cpu), cpu);
+        rot(32 - imm(cpu), cpu);
         break;
       case 0xE2:
-        rot(32 - *absolute(cpu), cpu);
+        rot(32 - absolute(cpu), cpu);
         break;
       case 0xE3:
-        rot(32 - *ind_x(cpu), cpu);
+        rot(32 - ind_x(cpu), cpu);
         break;
       case 0xE4:
-        rot(32 - *ind_off_x(cpu), cpu);
+        rot(32 - ind_off_x(cpu), cpu);
         break;
       // LSR
       case 0xE5:
-        cpu->a = cpu->a >> *imm(cpu);
+        cpu->a = cpu->a >> imm(cpu);
         set_zero_a(cpu);
         break;
       case 0xE6:
-        cpu->a = cpu->a >> *absolute(cpu);
+        cpu->a = cpu->a >> absolute(cpu);
         set_zero_a(cpu);
         break;
       case 0xE7:
-        cpu->a = cpu->a >> *ind_x(cpu);
+        cpu->a = cpu->a >> ind_x(cpu);
         set_zero_a(cpu);
         break;
       case 0xE8:
-        cpu->a = cpu->a >> *ind_off_x(cpu);
+        cpu->a = cpu->a >> ind_off_x(cpu);
         set_zero_a(cpu);
         break;
       // LSL
       case 0xE9:
-        cpu->a = cpu->a << *imm(cpu);
+        cpu->a = cpu->a << imm(cpu);
         set_zero_a(cpu);
         break;
       case 0xEA:
-        cpu->a = cpu->a << *absolute(cpu);
+        cpu->a = cpu->a << absolute(cpu);
         set_zero_a(cpu);
         break;
       case 0xEB:
-        cpu->a = cpu->a << *ind_x(cpu);
+        cpu->a = cpu->a << ind_x(cpu);
         set_zero_a(cpu);
         break;
       case 0xEC:
-        cpu->a = cpu->a << *ind_off_x(cpu);
+        cpu->a = cpu->a << ind_off_x(cpu);
         set_zero_a(cpu);
         break;
       // ADD
       case 0xC0:
-        cpu->a = cpu->a + *imm(cpu);
+        cpu->a = cpu->a + imm(cpu);
         set_flags_a(cpu);
         break;
       case 0xC1:
-        cpu->a = cpu->a + *absolute(cpu);
+        cpu->a = cpu->a + absolute(cpu);
         set_flags_a(cpu);
         break;
       case 0xC2:
-        cpu->a = cpu->a + *ind_x(cpu);
+        cpu->a = cpu->a + ind_x(cpu);
         set_flags_a(cpu);
         break;
       case 0xC3:
-        cpu->a = cpu->a + *ind_off_x(cpu);
+        cpu->a = cpu->a + ind_off_x(cpu);
         set_flags_a(cpu);
         break;
       // CMP
       case 0xC4:
-        cmp(*imm(cpu), cpu);
+        cmp(imm(cpu), cpu);
         break;
       case 0xC5:
-        cmp(*absolute(cpu), cpu);
+        cmp(absolute(cpu), cpu);
         break;
       case 0xC6:
-        cmp(*ind_x(cpu), cpu);
+        cmp(ind_x(cpu), cpu);
         break;
       case 0xC7:
-        cmp(*ind_off_x(cpu), cpu);
+        cmp(ind_off_x(cpu), cpu);
         break;
       // JMP
       case 0xD0:
@@ -643,7 +743,7 @@ int main(int argc, char *argv[])
       case 0x82:
         break;
       default:
-        puts("Illegal opcode");
+        printf("Illegal opcode \"%02x\"\n", opcode);
       // HLT
       case 0x83:
         halted = 1;
