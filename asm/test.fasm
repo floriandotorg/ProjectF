@@ -4,13 +4,28 @@ lda $10
 lda ($10,X)
 lda ($10),X
 
-loop:
-    lda #loop
-    lda loop
-    lda (loop,X)
-    lda (loop),X
-    jst bla
+loop_loop:
+    lda             #loop_loop
+    lda loop_loop
+    lda (loop_loop,X)
+    lda     (loop_loop),X
+    jts    bla
+    lda %11111111
+    hlt
 
 bla:
     add ($10),X
+    stab $10
+    ldxb ($10,X)
+    ldab (loop_loop),X
     rts
+    
+.byte $de
+.byte 42
+
+str:
+.word $deadbeef
+.string Hallo Welt
+.word $beefdead
+.string Welt Hallo
+

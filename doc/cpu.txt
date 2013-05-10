@@ -23,21 +23,30 @@ Memory Layout
 *
 *----------------------------------------*
 
-Interrupt-Vektoren
-------------------
-
-[$FFA0 0010] UART RX Complete
-[$FFA0 0011] UART TX Complete
+(r) = readonly
+(w) = writeonly
+(d) = reset on read
+Example: (r/d) = readonly/reset on read; (r/w) = readwrite
 
 Peripherie
 ----------
 
-[$FF00 0000] 7-Segementanzeige 1
-[$FF00 0001] 7-Segementanzeige 2
-[$FF00 0002] UART Status
-[$FF00 0003] UART Wert
-[$FF00 0004] UART Baudrate (Taktrate/Baudrate*16) - 1
-[$FF00 0005-$FF00 0008] CPU Taktfrequenz (RO)
+[$FF00 0001] 7-Segementanzeige 1 (w)
+[$FF00 0002] 7-Segementanzeige 2 (w)
+[$FF00 0003] UART Status (r/d)
+[$FF00 0003] UART Control (w)
+[$FF00 0004] UART Baudrate (Taktrate/Baudrate*16) - 1 (w)
+[$FF00 0005] UART Send (w)
+[$FF00 0005-$FF00 0008] CPU Taktfrequenz (r)
+
+[$FF00 00F0] General Interrupt Vector
+[$FF00 00F1] Interrupt Flags
+
+Interrupt Flags
+---------------
+
+0   RX Complete Interrupt
+1   TX Complete Interrupt
 
 UART Status
 -----------
@@ -45,12 +54,17 @@ UART Status
 Bit
 0    UART Receive Complete
 1    UART Transmit Complete
-2    RX Complete Interrupt Enable
-3    TX Complete Interrupt Enable
-4    Receiver Enable
-5    Transmitter Enable
-6    Data Over Run Error
-7    Error
+2    Error
+3    Data Over Run Error
+
+UART Control
+-----------
+
+Bit
+0    RX Complete Interrupt Enable
+1    TX Complete Interrupt Enable
+2    Receiver Enable
+3    Transmitter Enable
 
 Register
 --------
@@ -61,7 +75,7 @@ Addressing Modes
 ----------------
 
 Immediate: #value
-Absolute: $address
+Absolute: address
 Indirect,X: ($address,X)
 Indirect,Offset X: ($address),X
 
@@ -82,6 +96,42 @@ A = #0
 N = 0
 Z = 0
 I = 1
+
+LDAB
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        LDA $10         $7F     5
+Indirect,X      LDA ($10,X)     $7E     5
+Indirect,Off    LDA ($10),X     $7D     5
+
+Affects Flags: Z := Result == 0
+
+LDXB
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        LDX $10         $70     5
+Indirect,X      LDX ($10,X)     $71     5
+Indirect,Off    LDX ($10),X     $72     5
+
+Affects Flags: Z := Result == 0
+
+STAB
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        STA $10         $60     5
+Indirect,X      STA ($10,X)     $61     5
+Indirect,Off    STA ($10),X     $62     5
+
+STXB
+---
+
+MODE            SYNTAX          HEX     LEN
+Absolute        STX $10         $6D     5
+Indirect,X      STX ($10,X)     $6E     5
+Indirect,Off    STX ($10),X     $6F     5
 
 LDA
 ---

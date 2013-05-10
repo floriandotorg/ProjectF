@@ -8,6 +8,21 @@ typedef enum
 {
     invalid_instr,
     label,
+    byte,
+    word,
+    string,
+    ldab_absolute,
+    ldab_indirect_x,
+    ldab_indirect_off,
+    ldxb_absolute,
+    ldxb_indirect_x,
+    ldxb_indirect_off,
+    stab_absolute,
+    stab_indirect_x,
+    stab_indirect_off,
+    stxb_absolute,
+    stxb_indirect_x,
+    stxb_indirect_off,
     lda_immediate,
     lda_absolute,
     lda_indirect_x,
@@ -78,9 +93,9 @@ typedef enum
     blt_absolute,
     blt_indirect_x,
     blt_indirect_off, 
-    jst_absolute,
-    jst_indirect_x,
-    jst_indirect_off, 
+    jts_absolute,
+    jts_indirect_x,
+    jts_indirect_off, 
     rts,
     ina,
     inx,
@@ -159,7 +174,7 @@ int label_string(const char *str)
 
 void parse_value(instr_t *instr, const char *val_str)
 {
-    char scanf_buf[20];
+    char scanf_buf[50];
     size_t n;
     uint32_t result = 0;
     int sscanf_result = 0;
@@ -170,7 +185,12 @@ void parse_value(instr_t *instr, const char *val_str)
     {
         sscanf_result = sscanf(val_str + 1, "%x", &result);
     }
-    else 
+    else if(val_str[0] == '%')
+    {
+        result = strtol(val_str + 1, NULL, 2);
+        sscanf_result = 1;
+    }
+    else
     {
         sscanf_result = sscanf(val_str, "%i", &result);
         if(sscanf_result != 1)
@@ -199,18 +219,22 @@ void parse_value(instr_t *instr, const char *val_str)
     }
 }
 
-int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, instr_enum_t immediate, instr_enum_t absolute, instr_enum_t indirect_off, instr_enum_t indirect_x)
+int try_parse_instr(char *line, const char *instr_str, instr_t *instr, instr_enum_t immediate, instr_enum_t absolute, instr_enum_t indirect_off, instr_enum_t indirect_x)
 {
     char *p = NULL;
+    const size_t instr_str_len = strlen(instr_str);
     
-    if(memcmp(instr_str,line,3) == 0)
+    if(memcmp(instr_str,line,instr_str_len) == 0)
     {
-        if(line[4] == '#'&& immediate != invalid_instr)
+        line += instr_str_len;
+        for(;*line && isspace(*line);++line);
+        
+        if(line[0] == '#' && immediate != invalid_instr)
         {
             instr->mnemonic = immediate;
-            parse_value(instr, line + 5);
+            parse_value(instr, line);
         }
-        else if(line[4] == '(')
+        else if(line[0] == '(')
         {
             p = strchr(line,',');
             if(!p)
@@ -221,12 +245,12 @@ int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, ins
             else if(*(p-1) == ')' && indirect_off != invalid_instr)
             {
                 instr->mnemonic = indirect_off;
-                parse_value(instr, line + 5);
+                parse_value(instr, line);
             }
             else if(indirect_x != invalid_instr)
             {
                 instr->mnemonic = indirect_x;
-                parse_value(instr, line + 5);
+                parse_value(instr, line);
             }
             else
             {
@@ -237,7 +261,7 @@ int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, ins
         else if(absolute != invalid_instr)
         {
             instr->mnemonic = absolute;
-            parse_value(instr, line + 4);
+            parse_value(instr, line);
         }
         else
         {
@@ -253,29 +277,79 @@ int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, ins
     }
 }
 
+void str_to_lower(char *str)
+{
+    for(;*str;++str)
+    {
+        *str = tolower(*str);
+    }
+}
+
 #define TRY_PARSE(x) else if(try_parse_instr(line, #x, &instr, x##_immediate, x##_absolute, x##_indirect_off, x##_indirect_x)) { }
 #define TRY_PARSE_NO_IMMEDIATE(x) else if(try_parse_instr(line, #x, &instr, invalid_instr, x##_absolute, x##_indirect_off, x##_indirect_x)) { }
 #define TRY_PARSE_NO_PARAMS(x) else if(memcmp(#x,line,3) == 0) { instr.mnemonic = x; }
 
-instr_t* parse_instr(instr_t *tree, const char *line)
+instr_t* parse_instr(instr_t *tree, char *line)
 {
-    unsigned int label_pos;
+    unsigned int pos;
     instr_t instr;
+
     memset(&instr,0,sizeof(instr));
     
     for(;*line && isspace(*line);++line);
+    
+    if(line[0] != '.')
+    {
+        str_to_lower(line);
+    }
     
     if(!*line || line[0] == ';')
     {
         return tree;
     }
-    else if((label_pos = label_string(line)))
+    else if((pos = label_string(line)))
     {
         instr.mnemonic = label;
-        instr.str = malloc(sizeof(char) * (label_pos + 1));
-        memset(instr.str, 0, sizeof(char) * (label_pos + 1));
-        memcpy(instr.str, line, sizeof(char) * label_pos);
+        instr.str = malloc(sizeof(char) * (pos + 1));
+        memset(instr.str, 0, sizeof(char) * (pos + 1));
+        memcpy(instr.str, line, sizeof(char) * pos);
     }
+    else if(line[0] == '.')
+    {
+        if(memcmp("byte",line+1,sizeof("byte")-1) == 0)
+        {
+            instr.mnemonic = byte;
+            parse_value(&instr, line + 6);
+        }
+        else if(memcmp("word",line+1,sizeof("word")-1) == 0)
+        {
+            instr.mnemonic = word;
+            parse_value(&instr, line + 6);
+        }
+        else if(memcmp("string",line+1,sizeof("string")-1) == 0)
+        {
+            instr.mnemonic = string;
+            
+            pos=strlen(line+8);
+            instr.str = malloc(sizeof(char)*(pos+1));
+            memset(instr.str,0,sizeof(char)*(pos+1));
+            strcpy(instr.str,line+8);
+            
+            if(iscntrl(instr.str[pos-1]))
+            {
+                instr.str[pos-1] = '\0';
+            }
+        }
+        else
+        {
+            printf("could not parse line: %s",line);
+            exit(EXIT_FAILURE);
+        }
+    }
+    TRY_PARSE_NO_IMMEDIATE(ldab)
+    TRY_PARSE_NO_IMMEDIATE(ldxb)
+    TRY_PARSE_NO_IMMEDIATE(stab)
+    TRY_PARSE_NO_IMMEDIATE(stxb)
     TRY_PARSE(lda)
     TRY_PARSE(ldx)
     TRY_PARSE_NO_IMMEDIATE(sta)
@@ -293,7 +367,7 @@ instr_t* parse_instr(instr_t *tree, const char *line)
     TRY_PARSE_NO_IMMEDIATE(bne)
     TRY_PARSE_NO_IMMEDIATE(bgt)
     TRY_PARSE_NO_IMMEDIATE(blt)
-    TRY_PARSE_NO_IMMEDIATE(jst)
+    TRY_PARSE_NO_IMMEDIATE(jts)
     TRY_PARSE_NO_PARAMS(txa)
     TRY_PARSE_NO_PARAMS(tax)
     TRY_PARSE_NO_PARAMS(txs)
@@ -331,6 +405,18 @@ uint32_t instr_size(instr_t instr)
 #define CASE(x) case x:
     switch(instr.mnemonic)
     {
+        CASE(ldab_absolute)
+        CASE(ldab_indirect_x)
+        CASE(ldab_indirect_off)
+        CASE(ldxb_absolute)
+        CASE(ldxb_indirect_x)
+        CASE(ldxb_indirect_off)
+        CASE(stab_absolute)
+        CASE(stab_indirect_x)
+        CASE(stab_indirect_off)
+        CASE(stxb_absolute)
+        CASE(stxb_indirect_x)
+        CASE(stxb_indirect_off)
         CASE(lda_immediate)
         CASE(lda_absolute)
         CASE(lda_indirect_x)
@@ -393,9 +479,9 @@ uint32_t instr_size(instr_t instr)
         CASE(blt_absolute)
         CASE(blt_indirect_x)
         CASE(blt_indirect_off) 
-        CASE(jst_absolute)
-        CASE(jst_indirect_x)
-        CASE(jst_indirect_off) 
+        CASE(jts_absolute)
+        CASE(jts_indirect_x)
+        CASE(jts_indirect_off)
             return 5;
         
         CASE(txa)
@@ -415,10 +501,17 @@ uint32_t instr_size(instr_t instr)
         CASE(cli)
         CASE(nop)
         CASE(hlt)
+        CASE(byte)
             return 1;
+            
+        case word:
+            return 4;
         
         case label:
             return 0;
+            
+        case string:
+            return strlen(instr.str) + 1;
         
         default:
             puts("instr_size: illegal mnemonic");
@@ -431,8 +524,8 @@ void print_instr_tree(instr_t *tree)
 {
     uint32_t cur_addr = 0;
 
-    printf("%-12s%-20s%-12s%s\n","address","opcode","param","label");
-    printf("%-12s%-20s%-12s%s\n","-------","------","-----","-----");
+    printf("%-12s%-20s%-12s%s\n","address","mnemonic","param","string");
+    printf("%-12s%-20s%-12s%s\n","-------","--------","-----","------");
     
     for(;tree;tree = tree->next)
     {
@@ -442,8 +535,23 @@ void print_instr_tree(instr_t *tree)
 #define CASE(x) case x: printf("%-20s",#x); break;
         switch(tree->mnemonic)
         {
-            CASE(label)
             CASE(invalid_instr)
+            CASE(label)
+            CASE(byte)
+            CASE(word)
+            CASE(string)
+            CASE(ldab_absolute)
+            CASE(ldab_indirect_x)
+            CASE(ldab_indirect_off)
+            CASE(ldxb_absolute)
+            CASE(ldxb_indirect_x)
+            CASE(ldxb_indirect_off)
+            CASE(stab_absolute)
+            CASE(stab_indirect_x)
+            CASE(stab_indirect_off)
+            CASE(stxb_absolute)
+            CASE(stxb_indirect_x)
+            CASE(stxb_indirect_off)
             CASE(lda_immediate)
             CASE(lda_absolute)
             CASE(lda_indirect_x)
@@ -514,9 +622,9 @@ void print_instr_tree(instr_t *tree)
             CASE(blt_absolute)
             CASE(blt_indirect_x)
             CASE(blt_indirect_off) 
-            CASE(jst_absolute)
-            CASE(jst_indirect_x)
-            CASE(jst_indirect_off) 
+            CASE(jts_absolute)
+            CASE(jts_indirect_x)
+            CASE(jts_indirect_off) 
             CASE(rts)
             CASE(ina)
             CASE(inx)
@@ -556,7 +664,7 @@ void eval_labels(instr_t *tree)
     
     for(n = tree;n;n = n->next)
     {
-        if(n->mnemonic != label && n->str)
+        if(n->mnemonic != label && n->mnemonic != string && n->str)
         {
             for(m = tree;m;m = m->next)
             {
@@ -587,13 +695,25 @@ void generate_image(instr_t *tree, const char *filename)
         printf("could not create file \"%s\"",filename);
         exit(EXIT_FAILURE);
     }
-
+    
     for(;tree;tree = tree->next)
     {
 #define CASE(x,h) case x: fputc(h, out); break;
 #define CASE_P(x,h) case x: fputc(h, out); fwrite(&tree->param,sizeof(tree->param),1,out); break;
         switch(tree->mnemonic)
         {
+            CASE_P(ldab_absolute,0x7f)
+            CASE_P(ldab_indirect_x,0x7e)
+            CASE_P(ldab_indirect_off,0x7d)
+            CASE_P(ldxb_absolute,0x70)
+            CASE_P(ldxb_indirect_x,0x71)
+            CASE_P(ldxb_indirect_off,0x72)
+            CASE_P(stab_absolute,0x60)
+            CASE_P(stab_indirect_x,0x61)
+            CASE_P(stab_indirect_off,0x62)
+            CASE_P(stxb_absolute,0x6D)
+            CASE_P(stxb_indirect_x,0x6E)
+            CASE_P(stxb_indirect_off,0x6F)
             CASE_P(lda_immediate,0xaf)
             CASE_P(lda_absolute,0xae)
             CASE_P(lda_indirect_x,0xad)
@@ -656,9 +776,9 @@ void generate_image(instr_t *tree, const char *filename)
             CASE_P(blt_absolute,0xd9)
             CASE_P(blt_indirect_x,0xda)
             CASE_P(blt_indirect_off,0xdb) 
-            CASE_P(jst_absolute,0xdc)
-            CASE_P(jst_indirect_x,0xdd)
-            CASE_P(jst_indirect_off,0xde) 
+            CASE_P(jts_absolute,0xdc)
+            CASE_P(jts_indirect_x,0xdd)
+            CASE_P(jts_indirect_off,0xde) 
         
             CASE(txa,0xa9)
             CASE(tax,0xaa)
@@ -678,6 +798,18 @@ void generate_image(instr_t *tree, const char *filename)
             CASE(nop,0x82)
             CASE(hlt,0x83) 
             
+            case byte:
+                fputc((uint8_t)tree->param, out);
+                break;
+            
+            case word:
+                fwrite(&tree->param,sizeof(tree->param),1,out);
+                break;
+            
+            case string:
+                fwrite(tree->str,strlen(tree->str)+1,1,out);
+                break;
+            
             case label:
                 break;
             
@@ -691,14 +823,6 @@ void generate_image(instr_t *tree, const char *filename)
     
     fclose(out);
     out = NULL;
-}
-
-void str_to_lower(char *str)
-{
-    for(;*str;++str)
-    {
-        *str = tolower(*str);
-    }
 }
 
 int main(int argc, char *argv[])
@@ -725,7 +849,6 @@ int main(int argc, char *argv[])
     {
         memset(line,0,sizeof(line));
         fgets(line, sizeof(line), in); 
-        str_to_lower(line);
         tree = parse_instr(tree, line);
     }
     
