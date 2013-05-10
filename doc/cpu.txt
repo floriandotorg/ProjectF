@@ -70,7 +70,7 @@ Addressing Modes
 ----------------
 
 Immediate: #value
-Absolute: $address
+Absolute: address
 Indirect,X: ($address,X)
 Indirect,Offset X: ($address),X
 
