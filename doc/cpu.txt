@@ -37,7 +37,8 @@ Peripherie
 [$FF00 0003] UART Control (w)
 [$FF00 0004] UART Baudrate (Taktrate/Baudrate*16) - 1 (w)
 [$FF00 0005] UART Send (w)
-[$FF00 0005-$FF00 0008] CPU Taktfrequenz (r)
+[$FF00 0006] UART Recv (r/d)
+[$FF00 000A-$FF00 000D] CPU Taktfrequenz (r)
 
 [$FF00 00F0] General Interrupt Vector
 [$FF00 00F1] Interrupt Flags
@@ -45,8 +46,7 @@ Peripherie
 Interrupt Flags
 ---------------
 
-0   RX Complete Interrupt
-1   TX Complete Interrupt
+0   UART Interrupt
 
 UART Status
 -----------

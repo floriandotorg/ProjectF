@@ -8,6 +8,7 @@ typedef enum
 {
     invalid_instr,
     label,
+    addr_offset,
     byte,
     word,
     string,
@@ -172,6 +173,12 @@ int label_string(const char *str)
     return 0;
 }
 
+char* eat_whitespace(char *str)
+{
+    for(;*str && isspace(*str);++str);
+    return str;
+}
+
 void parse_value(instr_t *instr, const char *val_str)
 {
     char scanf_buf[50];
@@ -227,7 +234,7 @@ int try_parse_instr(char *line, const char *instr_str, instr_t *instr, instr_enu
     if(memcmp(instr_str,line,instr_str_len) == 0)
     {
         line += instr_str_len;
-        for(;*line && isspace(*line);++line);
+        line = eat_whitespace(line);
         
         if(line[0] == '#' && immediate != invalid_instr)
         {
@@ -287,7 +294,7 @@ void str_to_lower(char *str)
 
 #define TRY_PARSE(x) else if(try_parse_instr(line, #x, &instr, x##_immediate, x##_absolute, x##_indirect_off, x##_indirect_x)) { }
 #define TRY_PARSE_NO_IMMEDIATE(x) else if(try_parse_instr(line, #x, &instr, invalid_instr, x##_absolute, x##_indirect_off, x##_indirect_x)) { }
-#define TRY_PARSE_NO_PARAMS(x) else if(memcmp(#x,line,3) == 0) { instr.mnemonic = x; }
+#define TRY_PARSE_NO_PARAMS(x) else if(memcmp(#x,line,strlen(#x)) == 0) { instr.mnemonic = x; }
 
 instr_t* parse_instr(instr_t *tree, char *line)
 {
@@ -296,7 +303,7 @@ instr_t* parse_instr(instr_t *tree, char *line)
 
     memset(&instr,0,sizeof(instr));
     
-    for(;*line && isspace(*line);++line);
+    line = eat_whitespace(line);
     
     if(line[0] != '.')
     {
@@ -339,6 +346,21 @@ instr_t* parse_instr(instr_t *tree, char *line)
             {
                 instr.str[pos-1] = '\0';
             }
+        }
+        else
+        {
+            printf("could not parse line: %s",line);
+            exit(EXIT_FAILURE);
+        }
+    }
+    else if(line[0] == '*')
+    {
+        line = eat_whitespace(line + 1);
+        if(line[0] == '=')
+        {
+            line = eat_whitespace(line + 1);
+            instr.mnemonic = addr_offset;
+            parse_value(&instr, line);
         }
         else
         {
@@ -530,13 +552,22 @@ void print_instr_tree(instr_t *tree)
     for(;tree;tree = tree->next)
     {
         printf("%08x    ",cur_addr);
-        cur_addr += instr_size(*tree);
+        
+        if(tree->mnemonic == addr_offset)
+        {
+            cur_addr = tree->param;
+        }
+        else
+        {
+            cur_addr += instr_size(*tree);
+        }
         
 #define CASE(x) case x: printf("%-20s",#x); break;
         switch(tree->mnemonic)
         {
             CASE(invalid_instr)
             CASE(label)
+            CASE(addr_offset)
             CASE(byte)
             CASE(word)
             CASE(string)
@@ -655,7 +686,15 @@ void eval_labels(instr_t *tree)
     
     for(n = tree;n;n = n->next)
     {
-        cur_addr += instr_size(*n);
+        if(n->mnemonic == addr_offset)
+        {
+            cur_addr = n->param;
+        }
+        else
+        {
+            cur_addr += instr_size(*n);
+        }
+        
         if(n->mnemonic == label)
         {
             n->param = cur_addr;
@@ -810,6 +849,7 @@ void generate_image(instr_t *tree, const char *filename)
                 fwrite(tree->str,strlen(tree->str)+1,1,out);
                 break;
             
+            case addr_offset:
             case label:
                 break;
             

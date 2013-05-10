@@ -12,6 +12,8 @@ loop_loop:
     jts    bla
     lda %11111111
     hlt
+    
+*=$ff
 
 bla:
     add ($10),X
