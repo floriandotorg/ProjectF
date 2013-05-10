@@ -149,7 +149,7 @@ void write(uint32_t address, uint32_t value, cpu_t *cpu)
     uint8_t i = 0;
     for (; i < 4; i++)
     {
-         write_byte_part(part, part_address, value & 0xFF, cpu);
+         write_byte_part(part, part_address + i, value & 0xFF, cpu);
          value >>= 8;
     }
 }
