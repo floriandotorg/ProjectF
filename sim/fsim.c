@@ -101,6 +101,20 @@ void set_flags_a(cpu_t *cpu)
     cpu->n = cpu->a < 0 ? 1 : 0;
 }
 
+void cmp(uint32_t parameter, cpu_t *cpu)
+{
+    cpu->z = parameter == cpu->a ? 1 : 0;
+    cpu->n = parameter  < cpu->a ? 1 : 0;
+}
+
+void rot(uint32_t delta, cpu_t* cpu);
+{
+    delta %= 32;
+    uint32_t mask = ~(UINT32_C(1) << delta);
+    cpu->a = ((cpu->a >> delta) & mask) | ((cpu->a & mask) << delta);
+    set_zero_a(cpu);
+}
+
 int main(int argc, char *argv[])
 {
     unsigned char opcode = 0x00;
@@ -349,19 +363,29 @@ int main(int argc, char *argv[])
         break;
       // ROR
       case 0xFC:
+        rot(*imm(cpu), cpu);
+        break;
       case 0xFD:
+        rot(*absolute(cpu), cpu);
+        break;
       case 0xFE:
+        rot(*ind_x(cpu), cpu);
+        break;
       case 0xFF:
-        puts("ROR"); cpu->pc += 4;
-        set_zero_a(cpu);
+        rot(*ind_off_x(cpu), cpu);
         break;
       // ROL
       case 0xE1:
+        rot(32 - *imm(cpu), cpu);
+        break;
       case 0xE2:
+        rot(32 - *absolute(cpu), cpu);
+        break;
       case 0xE3:
+        rot(32 - *ind_x(cpu), cpu);
+        break;
       case 0xE4:
-        puts("ROL"); cpu->pc += 4;
-        set_zero_a(cpu);
+        rot(32 - *ind_off_x(cpu), cpu);
         break;
       // LSR
       case 0xE5:
@@ -416,12 +440,16 @@ int main(int argc, char *argv[])
         break;
       // CMP
       case 0xC4:
+        cmp(*imm(cpu), cpu);
+        break;
       case 0xC5:
+        cmp(*absolute(cpu), cpu);
+        break;
       case 0xC6:
+        cmp(*ind_x(cpu), cpu);
+        break;
       case 0xC7:
-/*      cpu->z = cpu->a == 0 ? 0 : 1;
-        cpu->n = cpu->a < 0 ? 0 : 1;*/
-        puts("CMP"); cpu->pc += 4;
+        cmp(*ind_off_x(cpu), cpu);
         break;
       // JMP
       case 0xD0:
