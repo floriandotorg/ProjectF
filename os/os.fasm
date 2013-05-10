@@ -1,29 +1,63 @@
     *=$01000000
-
-    ; uart tx on
-    lda  #%0010
+    
+    ; uart rx/tx & rx interrupt on
+    lda  #%1101
     stab $ff000004
-
+    
     ldx  #0
     
 loop:
+    lda  #0
     ldab (hello_str_p),X
-    beq  end
+    beq  recv
     stab $ff000006
     
 wait_uart:
+    lda  #0
     ldab $ff000003
     and  #%10
-    bne  wait_uart
+    beq  wait_uart
     
     inx
     jmp  loop
     
+recv:
+    lda  #intr_vec
+    sta  $ff0000e0
+    sei
+    
+recv_loop:
+    lda  #0
+    ldab quit
+    beq  recv_loop
+
 end:
     hlt
     
+intr_vec:
+    hlt
+    pua
+    pux
+    puf
+
+    ; set quit flag
+    lda  #1
+    stab quit
+    
+    ; clear interrupt flags
+    lda  #0
+    sta  $ff0000f1
+    
+    pof
+    pox
+    poa
+    rti
+    
 hello_str:
-    .string Hallo Welt!
+    .string Press any key to quit
     
 hello_str_p:
     .word hello_str
+    
+quit:
+    .byte $0
