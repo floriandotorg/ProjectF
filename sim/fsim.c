@@ -198,9 +198,9 @@ void jump(uint8_t mode, cpu_t *cpu)
     }
 }
 
-void branch_nz(uint8_t mode, cpu_t *cpu)
+void branch_zero(uint8_t zero, uint8_t mode, cpu_t *cpu)
 {
-    if (cpu->z == 0)
+    if (cpu->z == zero)
     {
         jump(mode, cpu);
     }
@@ -208,7 +208,7 @@ void branch_nz(uint8_t mode, cpu_t *cpu)
 
 void branch_gl(uint8_t negative, uint8_t mode, cpu_t *cpu)
 {
-    if (negative == cpu->n)
+    if (negative == cpu->n && cpu->z == 0)
     {
         jump(mode, cpu);
     }
@@ -671,13 +671,23 @@ int main(int argc, char *argv[])
         break;
       // BNE
       case 0xD3:
-        branch_nz(0, cpu);
+        branch_zero(0, 0, cpu);
         break;
       case 0xD4:
-        branch_nz(1, cpu);
+        branch_zero(0, 1, cpu);
         break;
       case 0xD5:
-        branch_nz(2, cpu);
+        branch_zero(0, 2, cpu);
+        break;
+      // BEQ
+      case 0xDC:
+        branch_zero(1, 0, cpu);
+        break;
+      case 0xDD:
+        branch_zero(1, 1, cpu);
+        break;
+      case 0xDE:
+        branch_zero(1, 2, cpu);
         break;
       // BGT
       case 0xD6:
@@ -689,7 +699,7 @@ int main(int argc, char *argv[])
       case 0xD8:
         branch_gl(0, 2, cpu);
         break;
-      // LGT
+      // BLT
       case 0xD9:
         branch_gl(1, 0, cpu);
         break;
@@ -700,17 +710,17 @@ int main(int argc, char *argv[])
         branch_gl(1, 2, cpu);
         break;
       // JTS
-      case 0xDC:
+      case 0xBC:
         jts(0, cpu);
         break;
-      case 0xDD:
+      case 0xBD:
         jts(1, cpu);
         break;
-      case 0xDE:
+      case 0xBE:
         jts(2, cpu);
         break;
       // RTS
-      case 0xDF:
+      case 0xBF:
         cpu->pc = pop(cpu);
         break;
       // INA
@@ -746,8 +756,11 @@ int main(int argc, char *argv[])
         break;
       default:
         printf("Illegal opcode \"%02x\"\n", opcode);
+        halted = 1;
+        break;
       // HLT
       case 0x83:
+        printf("Halted cpu\n");
         halted = 1;
         break;
       }
