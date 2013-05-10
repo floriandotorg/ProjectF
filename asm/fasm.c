@@ -11,6 +11,18 @@ typedef enum
     byte,
     word,
     string,
+    ldab_absolute,
+    ldab_indirect_x,
+    ldab_indirect_off,
+    ldxb_absolute,
+    ldxb_indirect_x,
+    ldxb_indirect_off,
+    stab_absolute,
+    stab_indirect_x,
+    stab_indirect_off,
+    stxb_absolute,
+    stxb_indirect_x,
+    stxb_indirect_off,
     lda_immediate,
     lda_absolute,
     lda_indirect_x,
@@ -210,15 +222,16 @@ void parse_value(instr_t *instr, const char *val_str)
 int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, instr_enum_t immediate, instr_enum_t absolute, instr_enum_t indirect_off, instr_enum_t indirect_x)
 {
     char *p = NULL;
+    const size_t instr_str_len = strlen(instr_str);
     
-    if(memcmp(instr_str,line,3) == 0)
+    if(memcmp(instr_str,line,instr_str_len) == 0)
     {
-        if(line[4] == '#'&& immediate != invalid_instr)
+        if(line[instr_str_len+1] == '#'&& immediate != invalid_instr)
         {
             instr->mnemonic = immediate;
-            parse_value(instr, line + 5);
+            parse_value(instr, line + instr_str_len + 2);
         }
-        else if(line[4] == '(')
+        else if(line[instr_str_len+1] == '(')
         {
             p = strchr(line,',');
             if(!p)
@@ -229,12 +242,12 @@ int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, ins
             else if(*(p-1) == ')' && indirect_off != invalid_instr)
             {
                 instr->mnemonic = indirect_off;
-                parse_value(instr, line + 5);
+                parse_value(instr, line + instr_str_len + 2);
             }
             else if(indirect_x != invalid_instr)
             {
                 instr->mnemonic = indirect_x;
-                parse_value(instr, line + 5);
+                parse_value(instr, line + instr_str_len + 2);
             }
             else
             {
@@ -245,7 +258,7 @@ int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, ins
         else if(absolute != invalid_instr)
         {
             instr->mnemonic = absolute;
-            parse_value(instr, line + 4);
+            parse_value(instr, line + instr_str_len + 1);
         }
         else
         {
@@ -330,6 +343,10 @@ instr_t* parse_instr(instr_t *tree, char *line)
             exit(EXIT_FAILURE);
         }
     }
+    TRY_PARSE_NO_IMMEDIATE(ldab)
+    TRY_PARSE_NO_IMMEDIATE(ldxb)
+    TRY_PARSE_NO_IMMEDIATE(stab)
+    TRY_PARSE_NO_IMMEDIATE(stxb)
     TRY_PARSE(lda)
     TRY_PARSE(ldx)
     TRY_PARSE_NO_IMMEDIATE(sta)
@@ -385,6 +402,18 @@ uint32_t instr_size(instr_t instr)
 #define CASE(x) case x:
     switch(instr.mnemonic)
     {
+        CASE(ldab_absolute)
+        CASE(ldab_indirect_x)
+        CASE(ldab_indirect_off)
+        CASE(ldxb_absolute)
+        CASE(ldxb_indirect_x)
+        CASE(ldxb_indirect_off)
+        CASE(stab_absolute)
+        CASE(stab_indirect_x)
+        CASE(stab_indirect_off)
+        CASE(stxb_absolute)
+        CASE(stxb_indirect_x)
+        CASE(stxb_indirect_off)
         CASE(lda_immediate)
         CASE(lda_absolute)
         CASE(lda_indirect_x)
@@ -508,6 +537,18 @@ void print_instr_tree(instr_t *tree)
             CASE(byte)
             CASE(word)
             CASE(string)
+            CASE(ldab_absolute)
+            CASE(ldab_indirect_x)
+            CASE(ldab_indirect_off)
+            CASE(ldxb_absolute)
+            CASE(ldxb_indirect_x)
+            CASE(ldxb_indirect_off)
+            CASE(stab_absolute)
+            CASE(stab_indirect_x)
+            CASE(stab_indirect_off)
+            CASE(stxb_absolute)
+            CASE(stxb_indirect_x)
+            CASE(stxb_indirect_off)
             CASE(lda_immediate)
             CASE(lda_absolute)
             CASE(lda_indirect_x)
@@ -651,13 +692,25 @@ void generate_image(instr_t *tree, const char *filename)
         printf("could not create file \"%s\"",filename);
         exit(EXIT_FAILURE);
     }
-
+    
     for(;tree;tree = tree->next)
     {
 #define CASE(x,h) case x: fputc(h, out); break;
 #define CASE_P(x,h) case x: fputc(h, out); fwrite(&tree->param,sizeof(tree->param),1,out); break;
         switch(tree->mnemonic)
         {
+            CASE_P(ldab_absolute,0x7f)
+            CASE_P(ldab_indirect_x,0x7e)
+            CASE_P(ldab_indirect_off,0x7d)
+            CASE_P(ldxb_absolute,0x70)
+            CASE_P(ldxb_indirect_x,0x71)
+            CASE_P(ldxb_indirect_off,0x72)
+            CASE_P(stab_absolute,0x60)
+            CASE_P(stab_indirect_x,0x61)
+            CASE_P(stab_indirect_off,0x62)
+            CASE_P(stxb_absolute,0x6D)
+            CASE_P(stxb_indirect_x,0x6E)
+            CASE_P(stxb_indirect_off,0x6F)
             CASE_P(lda_immediate,0xaf)
             CASE_P(lda_absolute,0xae)
             CASE_P(lda_indirect_x,0xad)

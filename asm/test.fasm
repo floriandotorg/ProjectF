@@ -11,9 +11,13 @@ loop:
     lda (loop),X
     jts bla
     lda %11111111
+    hlt
 
 bla:
     add ($10),X
+    stab $10
+    ldxb ($10,X)
+    ldab (loop),X
     rts
     
 .byte $de
