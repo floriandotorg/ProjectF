@@ -184,7 +184,7 @@ void jump(uint8_t mode, cpu_t *cpu)
     switch (mode)
     {
         case 0:
-            cpu->pc = imm(cpu);
+            cpu->pc = abs_address(cpu);
             break;
         case 1:
             cpu->pc = ind_x_address(cpu);
@@ -198,19 +198,19 @@ void jump(uint8_t mode, cpu_t *cpu)
     }
 }
 
-void branch_zero(uint8_t zero, uint8_t mode, cpu_t *cpu)
+void branch_zero(uint8_t zero, uint32_t target, cpu_t *cpu)
 {
     if (cpu->z == zero)
     {
-        jump(mode, cpu);
+        cpu->pc = target;
     }
 }
 
-void branch_gl(uint8_t negative, uint8_t mode, cpu_t *cpu)
+void branch_gl(uint8_t negative, uint32_t target, cpu_t *cpu)
 {
     if (negative == cpu->n && cpu->z == 0)
     {
-        jump(mode, cpu);
+        cpu->pc = target;
     }
 }
 
@@ -280,10 +280,10 @@ uint32_t pop(cpu_t *cpu)
     return *ram(cpu->sp, cpu);
 }
 
-void jts(uint8_t mode, cpu_t *cpu)
+void jts(uint32_t target, cpu_t *cpu)
 {
-    push(cpu->pc + 4, cpu);
-    jump(mode, cpu);
+    push(cpu->pc, cpu);
+    cpu->pc = target;
 }
 
 void load_byte(uint32_t *reg, uint32_t value)
@@ -661,63 +661,63 @@ int main(int argc, char *argv[])
         break;
       // JMP
       case 0xD0:
-        jump(0, cpu);
+        cpu->pc = abs_address(cpu);
         break;
       case 0xD1:
-        jump(1, cpu);
+        cpu->pc = ind_x_address(cpu);
         break;
       case 0xD2:
-        jump(2, cpu);
+        cpu->pc = ind_off_x_address(cpu);
         break;
       // BNE
       case 0xD3:
-        branch_zero(0, 0, cpu);
+        branch_zero(0, abs_address(cpu), cpu);
         break;
       case 0xD4:
-        branch_zero(0, 1, cpu);
+        branch_zero(0, ind_x_address(cpu), cpu);
         break;
       case 0xD5:
-        branch_zero(0, 2, cpu);
+        branch_zero(0, ind_off_x_address(cpu), cpu);
         break;
       // BEQ
       case 0xDC:
-        branch_zero(1, 0, cpu);
+        branch_zero(1, abs_address(cpu), cpu);
         break;
       case 0xDD:
-        branch_zero(1, 1, cpu);
+        branch_zero(1, ind_x_address(cpu), cpu);
         break;
       case 0xDE:
-        branch_zero(1, 2, cpu);
+        branch_zero(1, ind_off_x_address(cpu), cpu);
         break;
       // BGT
       case 0xD6:
-        branch_gl(0, 0, cpu);
+        branch_gl(0, abs_address(cpu), cpu);
         break;
       case 0xD7:
-        branch_gl(0, 1, cpu);
+        branch_gl(0, ind_x_address(cpu), cpu);
         break;
       case 0xD8:
-        branch_gl(0, 2, cpu);
+        branch_gl(0, ind_off_x_address(cpu), cpu);
         break;
       // BLT
       case 0xD9:
-        branch_gl(1, 0, cpu);
+        branch_gl(1, abs_address(cpu), cpu);
         break;
       case 0xDA:
-        branch_gl(1, 1, cpu);
+        branch_gl(1, ind_x_address(cpu), cpu);
         break;
       case 0xDB:
-        branch_gl(1, 2, cpu);
+        branch_gl(1, ind_off_x_address(cpu), cpu);
         break;
       // JTS
       case 0xBC:
-        jts(0, cpu);
+        jts(abs_address(cpu), cpu);
         break;
       case 0xBD:
-        jts(1, cpu);
+        jts(ind_x_address(cpu), cpu);
         break;
       case 0xBE:
-        jts(2, cpu);
+        jts(ind_off_x_address(cpu), cpu);
         break;
       // RTS
       case 0xBF:
