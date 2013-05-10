@@ -23,12 +23,17 @@ Memory Layout
 *
 *----------------------------------------*
 
+(r) = readonly
+(w) = writeonly
+(d) = reset on read
+Example: (r/d) = readonly/reset on read; (r/w) = readwrite
+
 Peripherie
 ----------
 
 [$FF00 0001] 7-Segementanzeige 1 (w)
 [$FF00 0002] 7-Segementanzeige 2 (w)
-[$FF00 0003] UART Status (r)
+[$FF00 0003] UART Status (r/d)
 [$FF00 0003] UART Control (w)
 [$FF00 0004] UART Baudrate (Taktrate/Baudrate*16) - 1 (w)
 [$FF00 0005] UART Send (w)
@@ -47,19 +52,19 @@ UART Status
 -----------
 
 Bit
-0    Error
-1    Data Over Run Error
+0    UART Receive Complete
+1    UART Transmit Complete
+2    Error
+3    Data Over Run Error
 
 UART Control
 -----------
 
 Bit
-0    UART Receive Complete
-1    UART Transmit Complete
-2    RX Complete Interrupt Enable
-3    TX Complete Interrupt Enable
-4    Receiver Enable
-5    Transmitter Enable
+0    RX Complete Interrupt Enable
+1    TX Complete Interrupt Enable
+2    Receiver Enable
+3    Transmitter Enable
 
 Register
 --------

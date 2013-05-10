@@ -1,3 +1,27 @@
-LDA #03
-sta $10
-lda #05
+    ; uart tx on
+    lda  #%1000 
+    stab $ff000003
+
+    ldx  #0
+    
+loop:
+    lda  (hello_str_p),X
+    bgt  end
+    stab $ff000005
+    
+wait_uart:
+    ldab $ff000003
+    and  #%10
+    bgt  wait_uart
+    
+    inx
+    jmp  loop
+    
+end:
+    hlt
+    
+hello_str:
+    .string Hallo Welt!
+    
+hello_str_p:
+    .word hello_str
