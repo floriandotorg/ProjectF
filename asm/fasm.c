@@ -219,19 +219,22 @@ void parse_value(instr_t *instr, const char *val_str)
     }
 }
 
-int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, instr_enum_t immediate, instr_enum_t absolute, instr_enum_t indirect_off, instr_enum_t indirect_x)
+int try_parse_instr(char *line, const char *instr_str, instr_t *instr, instr_enum_t immediate, instr_enum_t absolute, instr_enum_t indirect_off, instr_enum_t indirect_x)
 {
     char *p = NULL;
     const size_t instr_str_len = strlen(instr_str);
     
     if(memcmp(instr_str,line,instr_str_len) == 0)
     {
-        if(line[instr_str_len+1] == '#'&& immediate != invalid_instr)
+        line += instr_str_len;
+        for(;*line && isspace(*line);++line);
+        
+        if(line[0] == '#' && immediate != invalid_instr)
         {
             instr->mnemonic = immediate;
-            parse_value(instr, line + instr_str_len + 2);
+            parse_value(instr, line);
         }
-        else if(line[instr_str_len+1] == '(')
+        else if(line[0] == '(')
         {
             p = strchr(line,',');
             if(!p)
@@ -242,12 +245,12 @@ int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, ins
             else if(*(p-1) == ')' && indirect_off != invalid_instr)
             {
                 instr->mnemonic = indirect_off;
-                parse_value(instr, line + instr_str_len + 2);
+                parse_value(instr, line);
             }
             else if(indirect_x != invalid_instr)
             {
                 instr->mnemonic = indirect_x;
-                parse_value(instr, line + instr_str_len + 2);
+                parse_value(instr, line);
             }
             else
             {
@@ -258,7 +261,7 @@ int try_parse_instr(const char *line, const char *instr_str, instr_t *instr, ins
         else if(absolute != invalid_instr)
         {
             instr->mnemonic = absolute;
-            parse_value(instr, line + instr_str_len + 1);
+            parse_value(instr, line);
         }
         else
         {
