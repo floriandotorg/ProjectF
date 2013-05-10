@@ -76,7 +76,7 @@ Start-Zustand
 -------------
 
 PC = $0
-SP = $00FF FFFF
+SP = $00FF FFFC
 X = #0
 A = #0
 N = 0
@@ -288,9 +288,9 @@ JMP
 ---
 
 MODE            SYNTAX          HEX     LEN
-Absolute        CMP $10         $D0     5
-Indirect,X      CMP ($10,X)     $D1     5
-Indirect,Off    CMP ($10),X     $D2     5
+Absolute        JMP $10         $D0     5
+Indirect,X      JMP ($10,X)     $D1     5
+Indirect,Off    JMP ($10),X     $D2     5
 
 BNE
 ---
@@ -350,7 +350,7 @@ INX
 MODE            SYNTAX          HEX     LEN
                 INX             $C9     1
                 
-Affects Flags: Z := Result == 0, N := Result < A
+Affects Flags: Z := Result == 0, N := Result < X
 
 DEA
 ---
@@ -366,7 +366,7 @@ DEX
 MODE            SYNTAX          HEX     LEN
                 DEX             $CB     1
                 
-Affects Flags: Z := Result == 0, N := Result < A
+Affects Flags: Z := Result == 0, N := Result < X
 
 SEI
 ---
