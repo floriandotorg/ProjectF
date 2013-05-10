@@ -40,7 +40,7 @@ Peripherie
 [$FF00 0007] UART Recv (r/d)
 [$FF00 000A-$FF00 000D] CPU Taktfrequenz (r)
 
-[$FF00 00F0] General Interrupt Vector
+[$FF00 00E0-$FF00 00E3] General Interrupt Vector
 [$FF00 00F1] Interrupt Flags
 
 Interrupt Flags
