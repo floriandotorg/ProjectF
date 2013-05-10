@@ -1,3 +1,5 @@
+#include "uart.h"
+
 #include <stdio.h>
 #include <string.h>
 #include <stdint.h>
@@ -17,9 +19,11 @@ typedef struct {
     uint8_t z;
     uint8_t n;
     uint8_t i;
+    uint8_t interrupt_flags;
     uint8_t ram[0x01000000];
     uint8_t flash[0x01000000];
-    uint8_t periphery[0x01000000];
+
+    uart_t *uart;
 } cpu_t;
 
 const uint32_t stack_pointer_start = 0x00FFFFFC;
@@ -43,7 +47,16 @@ uint8_t read_byte_part(uint8_t part, uint32_t part_address, cpu_t *cpu)
     case 0x01: // Flash
         return cpu->flash[part_address];
     case 0xFF: // Periphery
-        return cpu->periphery[part_address];
+        switch (part_address)
+        {
+        case 0x000003: // Status
+            return uart_read_status(cpu->uart);
+        case 0x000007: // Send
+            return uart_read_recv(cpu->uart);
+        default:
+            printf("Unknown periphery address %06x\n", part_address);
+            return 0;
+        }
     default:
         printf("Invalid adress %08x\n", ((uint32_t) part << 24) | part_address);
         return 0;
@@ -89,7 +102,18 @@ void write_byte_part(uint8_t part, uint32_t part_address, uint8_t value, cpu_t *
             cpu->flash[part_address] = value;
             break;
         case 0xFF: // Periphery
-            cpu->periphery[part_address] = value;
+            switch (part_address)
+            {
+            case 0x000004: // Control
+                uart_write_control(cpu->uart, value);
+                break;
+            case 0x000006: // Send
+                uart_write_send(cpu->uart, value);
+                break;
+            default:
+                printf("Unknown periphery address %06x\n", part_address);
+                break;
+            }
             break;
         default:
             printf("Invalid adress %08x\n", ((uint32_t) part << 24) | part_address);
@@ -346,32 +370,10 @@ int main(int argc, char *argv[])
     cpu->z = 0;
     cpu->n = 0;
     cpu->i = 1; // By default off → no interrupt table defined
+    cpu->interrupt_flags = 0;
 
-/*    cpu->ram[0] = 0x13;
-    cpu->ram[1] = 0x37;
-    cpu->ram[2] = 0x74;
-    cpu->ram[3] = 0x47;
-    cpu->ram[0x0000A000] = 0x02;
-    cpu->ram[0x0000A001] = 0x20;
-    cpu->ram[0x0000A004] = 0x0A;
-    cpu->ram[0x0000A005] = 0xA0;
-    cpu->ram[0x00134200] = 0x00;
-    cpu->ram[0x00134201] = 0xA0;
-    cpu->ram[0x00134204] = 0xFF;
-    cpu->ram[0x00134205] = 0xF0;
-    cpu->ram[0x0000F0FF] = 0xBA;
-    cpu->ram[0x0000F100] = 0XDC;
-    cpu->flash[1] = 0x42;
-    cpu->flash[2] = 0x13;
-    puts("before\n");
-    printf("%08x\n", *val(0, cpu));
-    printf("%08x\n", *val(0x01000000 + 1, cpu));
-    cpu->x = 4;
-    printf("%08x\n", imm(cpu)); cpu->pc = 0x01000000;
-    printf("%08x\n", absolute(cpu)); cpu->pc = 0x01000000;
-    printf("%08x\n", ind_x(cpu)); cpu->pc = 0x01000000;
-    printf("%08x\n", ind_off_x(cpu)); cpu->pc = 0x01000000;
-    printf("%08x\n", cpu->pc);*/
+    // UART
+    cpu->uart = uart_create();
 
     while(!halted) {
       opcode = read_byte(cpu->pc++, cpu);
@@ -749,6 +751,7 @@ int main(int argc, char *argv[])
         halted = 1;
         break;
       }
+      uart_recv_loop(cpu->uart, &cpu->interrupt_flags);
     }
 
     puts("Register Dump:");
@@ -786,6 +789,8 @@ int main(int argc, char *argv[])
             printf("Dumped ram to \"%s\"\n", dump_ram);
         }
     }
+
+    cpu->uart = uart_free(cpu->uart);
 
     free(cpu);
     cpu = NULL;
