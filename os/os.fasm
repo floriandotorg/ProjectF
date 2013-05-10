@@ -7,7 +7,7 @@
     ldx  #0
     
 loop:
-    lda  (hello_str_p),X
+    ldab (hello_str_p),X
     beq  end
     stab $ff000006
     
