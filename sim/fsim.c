@@ -84,7 +84,7 @@ uint32_t read(uint32_t address, cpu_t *cpu)
 
 void write_byte_in_word(uint32_t *word, uint8_t byte, uint8_t index)
 {
-    *word = ((uint32_t) byte << (index * 8)) | (*word & (~byte_mask << (index * 8)));
+    *word = ((uint32_t) byte << (index * 8)) | (*word & ~(byte_mask << (index * 8)));
 }
 
 void write_byte_part(uint8_t part, uint32_t part_address, uint8_t value, cpu_t *cpu)
@@ -113,16 +113,10 @@ void write_byte_part(uint8_t part, uint32_t part_address, uint8_t value, cpu_t *
                 uart_write_send(cpu->uart, value);
                 break;
             case 0x0000E0: // Interrupt vector
-                *((uint8_t*)&cpu->interrupt_vector + 0) = value;
-                break;
             case 0x0000E1:
-                *((uint8_t*)&cpu->interrupt_vector + 1) = value;
-                break;
             case 0x0000E2:
-                *((uint8_t*)&cpu->interrupt_vector + 2) = value;
-                break;
             case 0x0000E3:
-                *((uint8_t*)&cpu->interrupt_vector + 3) = value;
+                write_byte_in_word(&cpu->interrupt_vector, value, part_address - 0x0000E0);
                 break;
             case 0x0000F1: // Interrupt flags
                 cpu->interrupt_flags = value;
