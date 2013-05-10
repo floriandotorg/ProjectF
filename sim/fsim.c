@@ -5,12 +5,6 @@
 #include <stdint.h>
 #include <stdlib.h>
 
-typedef union
-{
-    uint8_t bytes[4];
-    uint32_t i;
-} char_to_uint32_t;
-
 typedef struct {
     uint32_t a;
     uint32_t x;
@@ -28,11 +22,6 @@ typedef struct {
 
 const uint32_t stack_pointer_start = 0x00FFFFFC;
 const uint32_t byte_mask = 0x000000FF;
-
-uint32_t *ram(uint32_t a, cpu_t *cpu)
-{
-    return (uint32_t *) &cpu->ram[a];
-}
 
 uint8_t read_byte_part(uint8_t part, uint32_t part_address, cpu_t *cpu)
 {
@@ -270,14 +259,14 @@ void rot(uint32_t delta, cpu_t *cpu)
 
 void push(uint32_t value, cpu_t *cpu)
 {
-    *ram(cpu->sp, cpu) = value;
+    write(cpu->sp, value, cpu);
     cpu->sp -= 4;
 }
 
 uint32_t pop(cpu_t *cpu)
 {
     cpu->sp += 4;
-    return *ram(cpu->sp, cpu);
+    return read(cpu->sp, cpu);
 }
 
 void jts(uint32_t target, cpu_t *cpu)
