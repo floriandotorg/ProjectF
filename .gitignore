@@ -1,6 +1,7 @@
 *.o
 *.bin
 *.exe
+*.dump
 
 asm/fasm
 sim/fsim

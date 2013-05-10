@@ -205,19 +205,13 @@ void branch_gl(uint8_t negative, uint32_t target, cpu_t *cpu)
 
 void dump_stack(cpu_t *cpu, uint8_t words)
 {
-    int entries = stack_pointer_start - cpu->sp;
-    printf("Dump: %d words", entries / 4);
-    if (words > 0)
+    uint32_t sp = cpu->sp;
+    
+    puts("Stack Dump");
+    
+    for(;sp != stack_pointer_start && sp - cpu->sp < 40; sp += 4)
     {
-        printf(" (max %d words shown)\n", words);
-        if (entries > words * 4)
-        {
-            entries = words * 4;
-        }
-    }
-    for (;entries > 0; entries -= 4)
-    {
-        printf("%08x = 0x%02x\n", stack_pointer_start - entries, *ram(stack_pointer_start - entries, cpu));
+        printf("%08x = 0x%02x\n", sp+4, read(sp+4,cpu));
     }
 }
 
