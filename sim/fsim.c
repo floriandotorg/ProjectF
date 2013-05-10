@@ -117,7 +117,6 @@ void write_byte_part(uint8_t part, uint32_t part_address, uint8_t value, cpu_t *
             case 0x0000E2:
             case 0x0000E3:
                 write_byte_in_word(&cpu->interrupt_vector, value, part_address - 0x0000E0);
-                printf("iv=%08x pa=%06x value=%08x", cpu->interrupt_vector, part_address, value);
                 break;
             case 0x0000F1: // Interrupt flags
                 cpu->interrupt_flags = value;
@@ -811,9 +810,9 @@ int main(int argc, char *argv[])
     printf("X  = %08x\n", cpu->x);
     printf("PC = %08x\n", cpu->pc);
     printf("SP = %08x\n", cpu->sp);
-    printf("z  =  %01d\n", cpu->z);
-    printf("n  =  %01d\n", cpu->n);
-    printf("i  =  %01d\n", cpu->i);
+    printf("z  = %01d\n", cpu->z);
+    printf("n  = %01d\n", cpu->n);
+    printf("i  = %01d\n", cpu->i);
     printf("if = %02x\n", cpu->interrupt_flags);
     printf("iv = %08x\n", cpu->interrupt_vector);
     puts("");
