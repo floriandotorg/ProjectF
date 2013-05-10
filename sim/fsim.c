@@ -377,6 +377,7 @@ int main(int argc, char *argv[])
 
     while(!halted) {
       opcode = read_byte(cpu->pc++, cpu);
+      //printf("%02x\n", opcode);
       switch (opcode) {
       // LDAB
       case 0x7F:
@@ -760,7 +761,11 @@ int main(int argc, char *argv[])
         break;
       // HLT
       case 0x83:
-        printf("Halted cpu\n");
+        puts("####################");
+        puts("#        ##        #");
+        puts("#### Halted CPU ####");
+        puts("#        ##        #");
+        puts("####################");
         halted = 1;
         break;
       }
