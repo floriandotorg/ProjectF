@@ -85,6 +85,9 @@ typedef enum
     jmp_absolute,
     jmp_indirect_x,
     jmp_indirect_off, 
+    beq_absolute,
+    beq_indirect_x,
+    beq_indirect_off,
     bne_absolute,
     bne_indirect_x,
     bne_indirect_off, 
@@ -187,8 +190,6 @@ void parse_value(instr_t *instr, const char *val_str)
     int sscanf_result = 0;
     
     memset(scanf_buf,0,sizeof(scanf_buf));
-    
-    printf("parse_value: %s", val_str);
     
     if(val_str[0] == '$')
     {
@@ -388,6 +389,7 @@ instr_t* parse_instr(instr_t *tree, char *line)
     TRY_PARSE(add)  
     TRY_PARSE(cmp)  
     TRY_PARSE_NO_IMMEDIATE(jmp)
+    TRY_PARSE_NO_IMMEDIATE(beq)
     TRY_PARSE_NO_IMMEDIATE(bne)
     TRY_PARSE_NO_IMMEDIATE(bgt)
     TRY_PARSE_NO_IMMEDIATE(blt)
@@ -494,6 +496,9 @@ uint32_t instr_size(instr_t instr)
         CASE(jmp_absolute)
         CASE(jmp_indirect_x)
         CASE(jmp_indirect_off) 
+        CASE(beq_absolute)
+        CASE(beq_indirect_x)
+        CASE(beq_indirect_off) 
         CASE(bne_absolute)
         CASE(bne_indirect_x)
         CASE(bne_indirect_off) 
@@ -646,6 +651,9 @@ void print_instr_tree(instr_t *tree)
             CASE(jmp_absolute)
             CASE(jmp_indirect_x)
             CASE(jmp_indirect_off) 
+            CASE(beq_absolute)
+            CASE(beq_indirect_x)
+            CASE(beq_indirect_off) 
             CASE(bne_absolute)
             CASE(bne_indirect_x)
             CASE(bne_indirect_off) 
@@ -808,6 +816,9 @@ void generate_image(instr_t *tree, const char *filename)
             CASE_P(jmp_absolute,0xd0)
             CASE_P(jmp_indirect_x,0xd1)
             CASE_P(jmp_indirect_off,0xd2) 
+            CASE_P(beq_absolute,0xdc)
+            CASE_P(beq_indirect_x,0xdd)
+            CASE_P(beq_indirect_off,0xde) 
             CASE_P(bne_absolute,0xd3)
             CASE_P(bne_indirect_x,0xd4)
             CASE_P(bne_indirect_off,0xd5) 
@@ -817,9 +828,9 @@ void generate_image(instr_t *tree, const char *filename)
             CASE_P(blt_absolute,0xd9)
             CASE_P(blt_indirect_x,0xda)
             CASE_P(blt_indirect_off,0xdb) 
-            CASE_P(jts_absolute,0xdc)
-            CASE_P(jts_indirect_x,0xdd)
-            CASE_P(jts_indirect_off,0xde) 
+            CASE_P(jts_absolute,0xbc)
+            CASE_P(jts_indirect_x,0xbd)
+            CASE_P(jts_indirect_off,0xbe) 
         
             CASE(txa,0xa9)
             CASE(tax,0xaa)
@@ -829,7 +840,7 @@ void generate_image(instr_t *tree, const char *filename)
             CASE(pux,0xb3)
             CASE(poa,0xb4)
             CASE(pox,0xb5)        
-            CASE(rts,0xdf)
+            CASE(rts,0xbf)
             CASE(ina,0xc8)
             CASE(inx,0xc9)
             CASE(dea,0xca)
