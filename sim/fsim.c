@@ -47,7 +47,7 @@ uint8_t read_byte_part(uint8_t part, uint32_t part_address, cpu_t *cpu)
         case 0x0000E1:
         case 0x0000E2:
         case 0x0000E3:
-            return cpu->interrupt_vector;
+            return (cpu->interrupt_vector >> ((part_address - 0x0000E0) * 8)) & 0xFF;
         case 0x0000F1: // Interrupt flags
             return cpu->interrupt_flags;
         default:
