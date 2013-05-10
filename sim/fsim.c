@@ -84,6 +84,12 @@ void set_zero_x(cpu_t *cpu)
     cpu->z = cpu->x == 0 ? 1 : 0;
 }
 
+void set_flags_x(cpu_t *cpu)
+{
+    set_zero_x(cpu);
+    cpu->n = cpu->x < 0 ? 1 : 0;
+}
+
 void set_zero_a(cpu_t *cpu)
 {
     cpu->z = cpu->a == 0 ? 1 : 0;
