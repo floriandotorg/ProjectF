@@ -1,0 +1,16 @@
+lda #10
+lda #$10
+lda $10
+lda ($10,X)
+lda ($10),X
+
+loop:
+    lda #loop
+    lda loop
+    lda (loop,X)
+    lda (loop),X
+    jst bla
+
+bla:
+    add ($10),X
+    rts
