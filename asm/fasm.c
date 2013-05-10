@@ -188,6 +188,8 @@ void parse_value(instr_t *instr, const char *val_str)
     
     memset(scanf_buf,0,sizeof(scanf_buf));
     
+    printf("parse_value: %s", val_str);
+    
     if(val_str[0] == '$')
     {
         sscanf_result = sscanf(val_str + 1, "%x", &result);
@@ -239,7 +241,7 @@ int try_parse_instr(char *line, const char *instr_str, instr_t *instr, instr_enu
         if(line[0] == '#' && immediate != invalid_instr)
         {
             instr->mnemonic = immediate;
-            parse_value(instr, line);
+            parse_value(instr, line + 1);
         }
         else if(line[0] == '(')
         {
@@ -252,12 +254,12 @@ int try_parse_instr(char *line, const char *instr_str, instr_t *instr, instr_enu
             else if(*(p-1) == ')' && indirect_off != invalid_instr)
             {
                 instr->mnemonic = indirect_off;
-                parse_value(instr, line);
+                parse_value(instr, line + 1);
             }
             else if(indirect_x != invalid_instr)
             {
                 instr->mnemonic = indirect_x;
-                parse_value(instr, line);
+                parse_value(instr, line + 1);
             }
             else
             {
