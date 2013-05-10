@@ -10,18 +10,19 @@ typedef union
 } char_to_uint32_t;
 
 typedef struct {
-    int32_t a;
-    int32_t x;
+    uint32_t a;
+    uint32_t x;
     uint32_t pc;
     uint32_t sp;
-    int32_t z;
-    int32_t n;
-    int32_t i;
+    uint8_t z;
+    uint8_t n;
+    uint8_t i;
     uint8_t ram[0x01000000];
     uint8_t flash[0x01000000];
 } cpu_t;
 
 const uint32_t stack_pointer_start = 0x00FFFFFC;
+const uint32_t byte_mask = 0x000000FF;
 
 uint32_t *ram(uint32_t a, cpu_t *cpu)
 {
@@ -43,7 +44,6 @@ uint32_t *val(uint32_t a, cpu_t *cpu)
 uint32_t *imm(cpu_t *cpu)
 {
     uint32_t *value = val(cpu->pc, cpu);
-    cpu->pc += 4;
     return value;
 }
 
@@ -59,6 +59,41 @@ uint32_t *ind_x(cpu_t *cpu) {
 uint32_t *ind_off_x(cpu_t *cpu)
 {
     return val(*val(*imm(cpu), cpu) + cpu->x, cpu);
+}
+
+void jump(uint8_t mode, cpu_t *cpu)
+{
+    switch (mode)
+    {
+        case 0:
+            cpu->pc = *imm(cpu);
+            break;
+        case 1:
+            cpu->pc = *val(*imm(cpu) + cpu->x, cpu);
+            break;
+        case 2:
+            cpu->pc = *val(*imm(cpu), cpu) + cpu->x;
+            break;
+        default :
+            printf("Unknown jump mode %d\n", mode);
+            break;
+    }
+}
+
+void branch_nz(uint8_t mode, cpu_t *cpu)
+{
+    if (cpu->z == 0)
+    {
+        jump(mode, cpu);
+    }
+}
+
+void branch_gl(uint8_t negative, uint8_t mode, cpu_t *cpu)
+{
+    if (negative == cpu->n)
+    {
+        jump(mode, cpu);
+    }
 }
 
 void dump_stack(cpu_t *cpu, uint8_t words)
@@ -107,12 +142,35 @@ void cmp(uint32_t parameter, cpu_t *cpu)
     cpu->n = parameter  < cpu->a ? 1 : 0;
 }
 
-void rot(uint32_t delta, cpu_t* cpu);
+void rot(uint32_t delta, cpu_t *cpu)
 {
     delta %= 32;
     uint32_t mask = ~(UINT32_C(1) << delta);
     cpu->a = ((cpu->a >> delta) & mask) | ((cpu->a & mask) << delta);
     set_zero_a(cpu);
+}
+
+void push(uint32_t value, cpu_t *cpu)
+{
+    *ram(cpu->sp, cpu) = value;
+    cpu->sp -= 4;
+}
+
+uint32_t pop(cpu_t *cpu)
+{
+    cpu->sp += 4;
+    return *ram(cpu->sp, cpu);
+}
+
+void jts(uint8_t mode, cpu_t *cpu)
+{
+    push(cpu->pc + 4, cpu);
+    jump(mode, cpu);
+}
+
+void load_byte(uint32_t *reg, uint32_t value)
+{
+    *reg = (*reg & ~byte_mask) | (value & byte_mask);
 }
 
 int main(int argc, char *argv[])
@@ -121,26 +179,32 @@ int main(int argc, char *argv[])
     cpu_t *cpu = malloc(sizeof(*cpu));
     memset(cpu, 0, sizeof(*cpu));
 
-    FILE *in = NULL;
+    FILE *file = NULL;
     int halted = 0;
-    int dump_ram = 0;
-    int dump_flash = 0;
+    char *dump_ram = NULL;
+    char *dump_flash = NULL;
+    char **buffer = NULL;
     int i;
 
-    if(argc < 1 || argc > 4)
+    if(argc != 2 && argc != 4 && argc != 6)
     {
-        puts("usage: fsim <in> [--dumpram|-r] [--dumpflash|-f]");
+        puts("usage: fsim <in> [--dumpram|-r <ram filename>] [--dumpflash|-f <flash filename>]");
         return EXIT_SUCCESS;
     }
     for (i = 2; i < argc; i++)
     {
-        if (memcmp("--dumpram", argv[i], 9) == 0 || memcmp("-r", argv[2], 2) == 0)
+        if (memcmp("--dumpram", argv[i], 9) == 0 || memcmp("-r", argv[i], 2) == 0)
         {
-            dump_ram = 1;
+            buffer = &dump_ram;
         }
-        else if (memcmp("--dumpflash", argv[3], 11) == 0 || memcmp("-f", argv[3], 2) == 0)
+        else if (memcmp("--dumpflash", argv[i], 11) == 0 || memcmp("-f", argv[i], 2) == 0)
         {
-            dump_flash = 1;
+            buffer = &dump_flash;
+        }
+        else if (buffer)
+        {
+            *buffer = argv[i];
+            buffer = NULL;
         }
         else
         {
@@ -148,20 +212,28 @@ int main(int argc, char *argv[])
             return EXIT_FAILURE;
         }
     }
+    if (buffer)
+    {
+         puts("Not all options set");
+         return EXIT_FAILURE;
+    }
 
-    in = fopen(argv[1], "r");
+    file = fopen(argv[1], "r");
 
-    if(!in)
+    if(!file)
     {
         printf("could not open file \"%s\"",argv[1]);
         return EXIT_FAILURE;
     }
 
-    fread(cpu->flash, sizeof(cpu->flash), 1, in);
+    fread(cpu->flash, sizeof(cpu->flash), 1, file);
 
-    printf("First 120 bytes of flash:");
-    for(i = 0;i < 120; i++) {
-        if (i % 12 == 0)
+    fclose(file);
+    file = NULL;
+
+    printf("First 160 bytes of flash:");
+    for(i = 0;i < 160; i++) {
+        if (i % 16 == 0)
         {
             printf("\n%08x:", i + 0x01000000);
         }
@@ -172,9 +244,6 @@ int main(int argc, char *argv[])
         printf("%02x", cpu->flash[i]);
     }
     printf("\n");
-
-    fclose(in);
-    in = NULL;
 
     cpu->a = 0;
     cpu->x = 0;
@@ -213,6 +282,47 @@ int main(int argc, char *argv[])
     while(!halted) {
       opcode = (uint8_t) *val(cpu->pc++, cpu);
       switch (opcode) {
+      // LDAB
+      case 0x7F:
+        load_byte(&cpu->a, *absolute(cpu));
+        break;
+      case 0x7E:
+        load_byte(&cpu->a, *ind_x(cpu));
+        break;
+      case 0x7D:
+        load_byte(&cpu->a, *ind_off_x(cpu));
+        break;
+      // LDXB
+      case 0x70:
+        load_byte(&cpu->x, *absolute(cpu));
+        break;
+      case 0x71:
+        load_byte(&cpu->x, *ind_x(cpu));
+        break;
+      case 0x72:
+        load_byte(&cpu->x, *ind_off_x(cpu));
+        break;
+      // STAB
+      case 0x60:
+        load_byte(absolute(cpu), cpu->a);
+        break;
+      case 0x61:
+        load_byte(ind_x(cpu), cpu->a);
+        break;
+      case 0x62:
+        load_byte(ind_off_x(cpu), cpu->a);
+        break;
+      // STXB
+      case 0x6F:
+        load_byte(absolute(cpu), cpu->x);
+        break;
+      case 0x6E:
+        load_byte(ind_x(cpu), cpu->x);
+        break;
+      case 0x6D:
+        load_byte(ind_off_x(cpu), cpu->x);
+        break;
+      // LDA
       case 0xAF:
         cpu->a = *imm(cpu);
         set_zero_a(cpu);
@@ -288,26 +398,22 @@ int main(int argc, char *argv[])
         break;
       //PUA
       case 0xB2:
-        *ram(cpu->sp, cpu) = cpu->a;
-        cpu->sp -= 4;
+        push(cpu->a, cpu);
         set_zero_a(cpu);
         break;
       //PUX
       case 0xB3:
-        *ram(cpu->sp, cpu) = cpu->x;
-        cpu->sp -= 4;
+        push(cpu->x, cpu);
         set_zero_x(cpu);
         break;
       //POA
       case 0xB4:
-        cpu->sp += 4;
-        cpu->a = *ram(cpu->sp, cpu);
+        cpu->a = pop(cpu);
         set_zero_a(cpu);
         break;
       // POX
       case 0xB5:
-        cpu->sp += 4;
-        cpu->x = *ram(cpu->sp, cpu);
+        cpu->x = pop(cpu);
         set_zero_x(cpu);
         break;
       // AND
@@ -453,40 +559,57 @@ int main(int argc, char *argv[])
         break;
       // JMP
       case 0xD0:
-        cpu->pc = *imm(cpu);
+        jump(0, cpu);
         break;
       case 0xD1:
-        //cpu->pc = *ind_x(cpu);
+        jump(1, cpu);
+        break;
       case 0xD2:
-        puts("\"C\"-JMP"); cpu->pc += 4;
+        jump(2, cpu);
         break;
       // BNE
       case 0xD3:
+        branch_nz(0, cpu);
+        break;
       case 0xD4:
+        branch_nz(1, cpu);
+        break;
       case 0xD5:
-        puts("BNE"); cpu->pc += 4;
+        branch_nz(2, cpu);
         break;
       // BGT
       case 0xD6:
+        branch_gl(0, 0, cpu);
+        break;
       case 0xD7:
+        branch_gl(0, 1, cpu);
+        break;
       case 0xD8:
-        puts("BGT"); cpu->pc += 4;
+        branch_gl(0, 2, cpu);
         break;
       // LGT
       case 0xD9:
+        branch_gl(1, 0, cpu);
+        break;
       case 0xDA:
+        branch_gl(1, 1, cpu);
+        break;
       case 0xDB:
-        puts("LGT"); cpu->pc += 4;
+        branch_gl(1, 2, cpu);
         break;
       // JTS
       case 0xDC:
+        jts(0, cpu);
+        break;
       case 0xDD:
+        jts(1, cpu);
+        break;
       case 0xDE:
-        puts("JTS"); cpu->pc += 4;
+        jts(2, cpu);
         break;
       // RTS
       case 0xDF:
-        puts("RTS");
+        cpu->pc = pop(cpu);
         break;
       // INA
       case 0xC8:
@@ -538,9 +661,30 @@ int main(int argc, char *argv[])
     printf("i  = %01d\n", cpu->i);
     dump_stack(cpu, 10);
 
+    if (dump_flash)
+    {
+        file = fopen(dump_flash, "w");
+        if(!file)
+        {
+            printf("could not open flash file \"%s\"", dump_flash);
+        } else {
+            fwrite(cpu->flash, sizeof(cpu->flash), 1, file);
+            fclose(file);
+            printf("Dumped flash to \"%s\"\n", dump_flash);
+        }
+    }
+
     if (dump_ram)
     {
-//        fread(cpu->flash, sizeof(cpu->flash), 1, in);
+        file = fopen(dump_ram, "w");
+        if(!file)
+        {
+            printf("could not open ram file \"%s\"", dump_ram);
+        } else {
+            fwrite(cpu->ram, sizeof(cpu->ram), 1, file);
+            fclose(file);
+            printf("Dumped ram to \"%s\"\n", dump_ram);
+        }
     }
 
     free(cpu);
