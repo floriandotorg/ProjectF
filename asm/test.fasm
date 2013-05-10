@@ -9,8 +9,17 @@ loop:
     lda loop
     lda (loop,X)
     lda (loop),X
-    jst bla
+    jts bla
 
 bla:
     add ($10),X
     rts
+    
+.byte $de
+.byte 42
+
+str:
+.word $deadbeef
+.string Hallo Welt
+.word $beefdead
+.string Welt Hallo
