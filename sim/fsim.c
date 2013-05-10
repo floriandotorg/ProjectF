@@ -113,10 +113,16 @@ void write_byte_part(uint8_t part, uint32_t part_address, uint8_t value, cpu_t *
                 uart_write_send(cpu->uart, value);
                 break;
             case 0x0000E0: // Interrupt vector
+                *((uint8_t*)&cpu->interrupt_vector + 0) = value;
+                break;
             case 0x0000E1:
+                *((uint8_t*)&cpu->interrupt_vector + 1) = value;
+                break;
             case 0x0000E2:
+                *((uint8_t*)&cpu->interrupt_vector + 2) = value;
+                break;
             case 0x0000E3:
-                write_byte_in_word(&cpu->interrupt_vector, value, part_address - 0x0000E0);
+                *((uint8_t*)&cpu->interrupt_vector + 3) = value;
                 break;
             case 0x0000F1: // Interrupt flags
                 cpu->interrupt_flags = value;
