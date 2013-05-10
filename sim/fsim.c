@@ -43,6 +43,11 @@ uint8_t read_byte_part(uint8_t part, uint32_t part_address, cpu_t *cpu)
             return uart_read_status(cpu->uart);
         case 0x000007: // Send
             return uart_read_recv(cpu->uart);
+        case 0x0000E0: // Interrupt vector
+        case 0x0000E1:
+        case 0x0000E2:
+        case 0x0000E3:
+            return 0;
         case 0x0000F1: // Interrupt flags
             return cpu->interrupt_flags;
         default:
@@ -228,7 +233,7 @@ void dump_stack(cpu_t *cpu, uint8_t words)
     
     for(;sp != stack_pointer_start && sp - cpu->sp < 40; sp += 4)
     {
-        printf("%08x = 0x%02x\n", sp+4, read(sp+4,cpu));
+        printf("%08x = 0x%08x\n", sp+4, read(sp+4,cpu));
     }
 }
 
@@ -805,9 +810,11 @@ int main(int argc, char *argv[])
     printf("X  = %08x\n", cpu->x);
     printf("PC = %08x\n", cpu->pc);
     printf("SP = %08x\n", cpu->sp);
-    printf("z  = %01d\n", cpu->z);
-    printf("n  = %01d\n", cpu->n);
-    printf("i  = %01d\n", cpu->i);
+    printf("z  =  %01d\n", cpu->z);
+    printf("n  =  %01d\n", cpu->n);
+    printf("i  =  %01d\n", cpu->i);
+    printf("if = %02x\n", cpu->interrupt_flags);
+    printf("iv = %08x\n", cpu->interrupt_vector);
     puts("");
     dump_stack(cpu, 10);
 
