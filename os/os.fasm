@@ -1,7 +1,7 @@
     *=$01000000
 
     ; uart tx on
-    lda  #%1000
+    lda  #%0010
     stab $ff000004
 
     ldx  #0
