@@ -344,7 +344,7 @@ int main(int argc, char *argv[])
         }
         printf("%02x", cpu->flash[i]);
     }
-    printf("\n");
+    printf("\n\n");
 
     cpu->a = 0;
     cpu->x = 0;
@@ -744,11 +744,13 @@ int main(int argc, char *argv[])
         break;
       // HLT
       case 0x83:
+        puts("");
         puts("####################");
         puts("#        ##        #");
         puts("#### Halted CPU ####");
         puts("#        ##        #");
         puts("####################");
+        puts("");
         halted = 1;
         break;
       }
@@ -763,6 +765,7 @@ int main(int argc, char *argv[])
     printf("z  = %01d\n", cpu->z);
     printf("n  = %01d\n", cpu->n);
     printf("i  = %01d\n", cpu->i);
+    puts("");
     dump_stack(cpu, 10);
 
     if (dump_flash)
