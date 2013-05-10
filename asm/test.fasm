@@ -21,7 +21,12 @@ bla:
     ldxb ($10,X)
     ldab (loop_loop),X
     rts
-    
+
+blub:
+    puf
+    pof
+    rti
+   
 .byte $de
 .byte 42
 

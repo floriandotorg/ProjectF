@@ -44,8 +44,10 @@ typedef enum
     tsx,
     pua,
     pux,
+    puf,
     poa,
     pox,
+    pof,
     and_immediate,
     and_absolute,
     and_indirect_x,
@@ -101,6 +103,7 @@ typedef enum
     jts_indirect_x,
     jts_indirect_off, 
     rts,
+    rti,
     ina,
     inx,
     dea,
@@ -400,9 +403,12 @@ instr_t* parse_instr(instr_t *tree, char *line)
     TRY_PARSE_NO_PARAMS(tsx)
     TRY_PARSE_NO_PARAMS(pua)
     TRY_PARSE_NO_PARAMS(pux)
+    TRY_PARSE_NO_PARAMS(puf)
     TRY_PARSE_NO_PARAMS(poa)
-    TRY_PARSE_NO_PARAMS(pox)        
+    TRY_PARSE_NO_PARAMS(pox)     
+    TRY_PARSE_NO_PARAMS(pof)     
     TRY_PARSE_NO_PARAMS(rts)
+    TRY_PARSE_NO_PARAMS(rti)
     TRY_PARSE_NO_PARAMS(ina)
     TRY_PARSE_NO_PARAMS(inx)
     TRY_PARSE_NO_PARAMS(dea)
@@ -519,9 +525,12 @@ uint32_t instr_size(instr_t instr)
         CASE(tsx)
         CASE(pua)
         CASE(pux)
+        CASE(puf)
         CASE(poa)
-        CASE(pox)        
+        CASE(pox)    
+        CASE(pof)         
         CASE(rts)
+        CASE(rti)
         CASE(ina)
         CASE(inx)
         CASE(dea)
@@ -610,8 +619,10 @@ void print_instr_tree(instr_t *tree)
             CASE(tsx)
             CASE(pua)
             CASE(pux)
+            CASE(puf)
             CASE(poa)
             CASE(pox)
+            CASE(pof)
             CASE(and_immediate)
             CASE(and_absolute)
             CASE(and_indirect_x)
@@ -667,6 +678,7 @@ void print_instr_tree(instr_t *tree)
             CASE(jts_indirect_x)
             CASE(jts_indirect_off) 
             CASE(rts)
+            CASE(rti)
             CASE(ina)
             CASE(inx)
             CASE(dea)
@@ -838,9 +850,12 @@ void generate_image(instr_t *tree, const char *filename)
             CASE(tsx,0xb1)
             CASE(pua,0xb2)
             CASE(pux,0xb3)
+            CASE(puf,0xb6)
             CASE(poa,0xb4)
-            CASE(pox,0xb5)        
+            CASE(pox,0xb5)   
+            CASE(pof,0xb7)
             CASE(rts,0xbf)
+            CASE(rti,0xb8)
             CASE(ina,0xc8)
             CASE(inx,0xc9)
             CASE(dea,0xca)
