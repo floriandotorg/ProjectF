@@ -13,11 +13,12 @@ typedef struct {
     uint8_t z;
     uint8_t n;
     uint8_t i;
-    uint8_t interrupt_flags;
     uint8_t ram[0x01000000];
     uint8_t flash[0x01000000];
 
     uart_t *uart;
+    uint32_t interrupt_vector;
+    uint8_t interrupt_flags;
 } cpu_t;
 
 const uint32_t stack_pointer_start = 0x00FFFFFC;
@@ -42,6 +43,8 @@ uint8_t read_byte_part(uint8_t part, uint32_t part_address, cpu_t *cpu)
             return uart_read_status(cpu->uart);
         case 0x000007: // Send
             return uart_read_recv(cpu->uart);
+        case 0x0000F1: // Interrupt flags
+            return cpu->interrupt_flags;
         default:
             printf("Unknown periphery address %06x\n", part_address);
             return 0;
@@ -74,6 +77,11 @@ uint32_t read(uint32_t address, cpu_t *cpu)
     return value;
 }
 
+void write_byte_in_word(uint32_t *word, uint8_t byte, uint8_t index)
+{
+    *word = ((uint32_t) byte << (index * 8)) | (*word & (~byte_mask << (index * 8)));
+}
+
 void write_byte_part(uint8_t part, uint32_t part_address, uint8_t value, cpu_t *cpu)
 {
     if ((part_address & 0xFF000000) != 0)
@@ -98,6 +106,15 @@ void write_byte_part(uint8_t part, uint32_t part_address, uint8_t value, cpu_t *
                 break;
             case 0x000006: // Send
                 uart_write_send(cpu->uart, value);
+                break;
+            case 0x0000E0: // Interrupt vector
+            case 0x0000E1:
+            case 0x0000E2:
+            case 0x0000E3:
+                write_byte_in_word(&cpu->interrupt_vector, value, part_address - 0x0000E0);
+                break;
+            case 0x0000F1: // Interrupt flags
+                cpu->interrupt_flags = value;
                 break;
             default:
                 printf("Unknown periphery address %06x\n", part_address);
@@ -263,6 +280,14 @@ uint32_t pop(cpu_t *cpu)
     return read(cpu->sp, cpu);
 }
 
+void pof(cpu_t *cpu)
+{
+    uint32_t pofed = pop(cpu);
+    cpu->z = (pofed & 0b100) == 0 ? 0 : 1;
+    cpu->n = (pofed & 0b010) == 0 ? 0 : 1;
+    cpu->i = (pofed & 0b001) == 0 ? 0 : 1;
+}
+
 void jts(uint32_t target, cpu_t *cpu)
 {
     push(cpu->pc, cpu);
@@ -352,7 +377,7 @@ int main(int argc, char *argv[])
     cpu->sp = stack_pointer_start;
     cpu->z = 0;
     cpu->n = 0;
-    cpu->i = 1; // By default off → no interrupt table defined
+    cpu->i = 0; // By default off → no interrupt table defined
     cpu->interrupt_flags = 0;
 
     // UART
@@ -363,145 +388,153 @@ int main(int argc, char *argv[])
       //printf("%02x\n", opcode);
       switch (opcode) {
       // LDAB
-      case 0x7F:
-        load_byte(&cpu->a, read_byte(abs_address(cpu), cpu));
-        set_zero_a(cpu);
-        break;
-      case 0x7E:
-        load_byte(&cpu->a, read_byte(ind_x_address(cpu), cpu));
-        set_zero_a(cpu);
-        break;
-      case 0x7D:
-        load_byte(&cpu->a, read_byte(ind_off_x_address(cpu), cpu));
-        set_zero_a(cpu);
-        break;
-      // LDXB
-      case 0x70:
-        load_byte(&cpu->x, read_byte(abs_address(cpu), cpu));
-        set_zero_x(cpu);
-        break;
-      case 0x71:
-        load_byte(&cpu->x, read_byte(ind_x_address(cpu), cpu));
-        set_zero_x(cpu);
-        break;
-      case 0x72:
-        load_byte(&cpu->x, read_byte(ind_off_x_address(cpu), cpu));
-        set_zero_x(cpu);
-        break;
-      // STAB
-      case 0x60:
-        write_byte(abs_address(cpu), cpu->a, cpu);
-        break;
-      case 0x61:
-        write_byte(ind_x_address(cpu), cpu->a, cpu);
-        break;
-      case 0x62:
-        write_byte(ind_off_x_address(cpu), cpu->a, cpu);
-        break;
-      // STXB
-      case 0x6F:
-        write_byte(abs_address(cpu), cpu->x, cpu);
-        break;
-      case 0x6E:
-        write_byte(ind_x_address(cpu), cpu->x, cpu);
-        break;
-      case 0x6D:
-        write_byte(ind_off_x_address(cpu), cpu->x, cpu);
-        break;
-      // LDA
-      case 0xAF:
-        cpu->a = imm(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xAE:
-        cpu->a = absolute(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xAD:
-        cpu->a = ind_x(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xAC:
-        cpu->a = ind_off_x(cpu);
-        set_zero_a(cpu);
-        break;
-      // LDX
-      case 0xA0:
-        cpu->x = imm(cpu);
-        set_zero_x(cpu);
-        break;
-      case 0xA1:
-        cpu->x = absolute(cpu);
-        set_zero_x(cpu);
-        break;
-      case 0xA2:
-        cpu->x = ind_x(cpu);
-        set_zero_x(cpu);
-        break;
-      case 0xA3:
-        cpu->x = ind_off_x(cpu);
-        set_zero_x(cpu);
-        break;
-      // STA
-      case 0x90:
-        write(abs_address(cpu), cpu->a, cpu);
-        break;
-      case 0x91:
-        write(ind_x_address(cpu), cpu->a, cpu);
-        break;
-      case 0x92:
-        write(ind_off_x_address(cpu), cpu->a, cpu);
-        break;
-      // STX
-      case 0x9D:
-        write(abs_address(cpu), cpu->x, cpu);
-        break;
-      case 0x9E:
-        write(ind_x_address(cpu), cpu->x, cpu);
-        break;
-      case 0x9F:
-        write(ind_off_x_address(cpu), cpu->x, cpu);
-        break;
-      // TXA
-      case 0xA9:
-        cpu->a = cpu->x;
-        set_zero_a(cpu);
-        break;
-      // TAX
-      case 0xAA:
-        cpu->x = cpu->a;
-        set_zero_x(cpu);
-        break;
-      // TXS
-      case 0xB0:
-        cpu->sp = cpu->x;
-        cpu->z = cpu->sp == 0 ? 1 : 0;
-        break;
-      // TSX
-      case 0xB1:
-        cpu->x = cpu->sp;
-        set_zero_x(cpu);
-        break;
-      //PUA
-      case 0xB2:
-        push(cpu->a, cpu);
-        set_zero_a(cpu);
-        break;
-      //PUX
-      case 0xB3:
-        push(cpu->x, cpu);
-        set_zero_x(cpu);
-        break;
-      //POA
-      case 0xB4:
-        cpu->a = pop(cpu);
-        set_zero_a(cpu);
-        break;
-      // POX
-      case 0xB5:
-        cpu->x = pop(cpu);
-        set_zero_x(cpu);
-        break;
+        case 0x7F:
+            load_byte(&cpu->a, read_byte(abs_address(cpu), cpu));
+            set_zero_a(cpu);
+            break;
+        case 0x7E:
+            load_byte(&cpu->a, read_byte(ind_x_address(cpu), cpu));
+            set_zero_a(cpu);
+            break;
+        case 0x7D:
+            load_byte(&cpu->a, read_byte(ind_off_x_address(cpu), cpu));
+            set_zero_a(cpu);
+            break;
+        // LDXB
+        case 0x70:
+            load_byte(&cpu->x, read_byte(abs_address(cpu), cpu));
+            set_zero_x(cpu);
+            break;
+        case 0x71:
+            load_byte(&cpu->x, read_byte(ind_x_address(cpu), cpu));
+            set_zero_x(cpu);
+            break;
+        case 0x72:
+            load_byte(&cpu->x, read_byte(ind_off_x_address(cpu), cpu));
+            set_zero_x(cpu);
+            break;
+        // STAB
+        case 0x60:
+            write_byte(abs_address(cpu), cpu->a, cpu);
+            break;
+        case 0x61:
+            write_byte(ind_x_address(cpu), cpu->a, cpu);
+            break;
+        case 0x62:
+            write_byte(ind_off_x_address(cpu), cpu->a, cpu);
+            break;
+        // STXB
+        case 0x6F:
+            write_byte(abs_address(cpu), cpu->x, cpu);
+            break;
+        case 0x6E:
+            write_byte(ind_x_address(cpu), cpu->x, cpu);
+            break;
+        case 0x6D:
+            write_byte(ind_off_x_address(cpu), cpu->x, cpu);
+            break;
+        // LDA
+        case 0xAF:
+            cpu->a = imm(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xAE:
+            cpu->a = absolute(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xAD:
+            cpu->a = ind_x(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xAC:
+            cpu->a = ind_off_x(cpu);
+            set_zero_a(cpu);
+            break;
+        // LDX
+        case 0xA0:
+            cpu->x = imm(cpu);
+            set_zero_x(cpu);
+            break;
+        case 0xA1:
+            cpu->x = absolute(cpu);
+            set_zero_x(cpu);
+            break;
+        case 0xA2:
+            cpu->x = ind_x(cpu);
+            set_zero_x(cpu);
+            break;
+        case 0xA3:
+            cpu->x = ind_off_x(cpu);
+            set_zero_x(cpu);
+            break;
+        // STA
+        case 0x90:
+            write(abs_address(cpu), cpu->a, cpu);
+            break;
+        case 0x91:
+            write(ind_x_address(cpu), cpu->a, cpu);
+            break;
+        case 0x92:
+            write(ind_off_x_address(cpu), cpu->a, cpu);
+            break;
+        // STX
+        case 0x9D:
+            write(abs_address(cpu), cpu->x, cpu);
+            break;
+        case 0x9E:
+            write(ind_x_address(cpu), cpu->x, cpu);
+            break;
+        case 0x9F:
+            write(ind_off_x_address(cpu), cpu->x, cpu);
+            break;
+        // TXA
+        case 0xA9:
+            cpu->a = cpu->x;
+            set_zero_a(cpu);
+            break;
+        // TAX
+        case 0xAA:
+            cpu->x = cpu->a;
+            set_zero_x(cpu);
+            break;
+        // TXS
+        case 0xB0:
+            cpu->sp = cpu->x;
+            cpu->z = cpu->sp == 0 ? 1 : 0;
+            break;
+        // TSX
+        case 0xB1:
+            cpu->x = cpu->sp;
+            set_zero_x(cpu);
+            break;
+        // PUA
+        case 0xB2:
+            push(cpu->a, cpu);
+            set_zero_a(cpu);
+            break;
+        // PUX
+        case 0xB3:
+            push(cpu->x, cpu);
+            set_zero_x(cpu);
+            break;
+        // PUF
+        case 0xB6:
+            push((cpu->z << 3) | (cpu->n << 2) | cpu-> i, cpu);
+            break;
+        //POA
+        case 0xB4:
+            cpu->a = pop(cpu);
+            set_zero_a(cpu);
+            break;
+        // POX
+        case 0xB5:
+            cpu->x = pop(cpu);
+            set_zero_x(cpu);
+            break;
+        // POF
+        case 0xB7:
+            pof(cpu);
+            break;
       // AND
       case 0xF0:
         cpu->a = cpu->a & imm(cpu);
@@ -707,6 +740,11 @@ int main(int argc, char *argv[])
       case 0xBF:
         cpu->pc = pop(cpu);
         break;
+      // RTI
+      case 0xB8:
+        cpu->i = 1;
+        cpu->pc = pop(cpu);
+        break;
       // INA
       case 0xC8:
         cpu->a++;
@@ -753,6 +791,11 @@ int main(int argc, char *argv[])
         break;
       }
       uart_recv_loop(cpu->uart, &cpu->interrupt_flags);
+      if (cpu->interrupt_flags && cpu->i)
+      {
+          cpu->i = 0;
+          jts(cpu->interrupt_vector, cpu);
+      }
     }
 
     puts("Register Dump:");
