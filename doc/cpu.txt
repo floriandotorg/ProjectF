@@ -409,6 +409,12 @@ RTS
 
 MODE            SYNTAX          HEX     LEN
                 RTS             $BF     1
+                
+RTI
+---
+
+MODE            SYNTAX          HEX     LEN
+                RTI             $B8     1
 
 INA
 ---
