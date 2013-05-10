@@ -5,23 +5,10 @@
     stab $ff000004
     
     ldx  #0
+
+    lda  #hello_str
+    jts  uart_send_str
     
-loop:
-    lda  #0
-    ldab (hello_str_p),X
-    beq  recv
-    stab $ff000006
-    
-wait_uart:
-    lda  #0
-    ldab $ff000003
-    and  #%10
-    beq  wait_uart
-    
-    inx
-    jmp  loop
-    
-recv:
     lda  #intr_vec
     sta  $ff0000e0
     sei
@@ -52,12 +39,41 @@ intr_vec:
     pox
     poa
     rti
+
+; DATA
     
 hello_str:
     .string Press any key to quit
+
+; UART send str
+uart_send_str:
+    sta  uart_send_str_p
+
+uart_send_str_loop:
+    lda  #0
+    ldab (uart_send_str_p),X
+    beq  uart_send_str_end
+    jts  uart_send_char
+    inx
+    jmp  uart_send_str_loop
     
-hello_str_p:
-    .word hello_str
+uart_send_str_end:
+    rts
+
+; UART send char
+uart_send_char:
+    stab $ff000006
     
+uart_send_char_wait:
+    lda  #0
+    ldab $ff000003
+    and  #%10
+    beq  uart_send_char_wait
+    
+    rts
+    
+*=$0
+uart_send_str_p:
+
+*=$1
 quit:
-    .byte $0
