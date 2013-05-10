@@ -365,7 +365,7 @@ Indirect,Off    BEQ ($10),X     $DE     5
 BGT
 ---
 
-Branch if Zero == 1, Negative == 0
+Branch if Zero == 0, Negative == 0
 
 MODE            SYNTAX          HEX     LEN
 Absolute        BGT $10         $D6     5
@@ -375,7 +375,7 @@ Indirect,Off    BGT ($10),X     $D8     5
 BLT
 ---
 
-Branch if Zero == 1, Negative == 1
+Branch if Zero == 0, Negative == 1
 
 MODE            SYNTAX          HEX     LEN
 Absolute        BLT $10         $D9     5
