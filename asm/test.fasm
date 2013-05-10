@@ -10,6 +10,7 @@ loop:
     lda (loop,X)
     lda (loop),X
     jts bla
+    lda %11111111
 
 bla:
     add ($10),X

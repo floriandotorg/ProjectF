@@ -173,6 +173,11 @@ void parse_value(instr_t *instr, const char *val_str)
     {
         sscanf_result = sscanf(val_str + 1, "%x", &result);
     }
+    else if(val_str[0] == '%')
+    {
+        result = strtol(val_str + 1, NULL, 2);
+        sscanf_result = 1;
+    }
     else
     {
         sscanf_result = sscanf(val_str, "%i", &result);
