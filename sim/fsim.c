@@ -288,9 +288,9 @@ uint32_t pop(cpu_t *cpu)
 void pof(cpu_t *cpu)
 {
     uint32_t pofed = pop(cpu);
-    cpu->z = (pofed & 0b100) == 0 ? 0 : 1;
-    cpu->n = (pofed & 0b010) == 0 ? 0 : 1;
-    cpu->i = (pofed & 0b001) == 0 ? 0 : 1;
+    cpu->z = (pofed & 0x04) == 0 ? 0 : 1; //0b100
+    cpu->n = (pofed & 0x02) == 0 ? 0 : 1; //0b010
+    cpu->i = (pofed & 0x01) == 0 ? 0 : 1; //0b001
 }
 
 void jts(uint32_t target, cpu_t *cpu)

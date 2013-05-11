@@ -2,6 +2,7 @@
 *.bin
 *.exe
 *.dump
+.DS_STORE
 
 asm/fasm
 sim/fsim

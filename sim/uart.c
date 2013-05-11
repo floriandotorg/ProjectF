@@ -6,37 +6,48 @@
 
 #ifdef __MINGW32__
 #include <conio.h>
-#else
-#include <termios.h>
-static int kbhit() {
-   struct termios term, oterm;
-   int fd = 0;
-   int c = 0;
-   tcgetattr(fd, &oterm);
-   memcpy(&term, &oterm, sizeof(term));
-   term.c_lflag = term.c_lflag & (!ICANON);
-   term.c_cc[VMIN] = 0;
-   term.c_cc[VTIME] = 1;
-   tcsetattr(fd, TCSANOW, &term);
-   c = getchar();
-   tcsetattr(fd, TCSANOW, &oterm);
-   if (c != -1)
-    ungetc(c, stdin);
-   return ((c != -1) ? 1 : 0);
+#elif __APPLE__
+static int kbhit()
+{
+	return 0;
 }
 
 static int getch()
 {
-   static int ch = -1, fd = 0;
-   struct termios neu, alt;
-   fd = fileno(stdin);
-   tcgetattr(fd, &alt);
-   neu = alt;
-   neu.c_lflag &= ~(ICANON|ECHO);
-   tcsetattr(fd, TCSANOW, &neu);
-   ch = getchar();
-   tcsetattr(fd, TCSANOW, &alt);
-   return ch;
+    return -1;
+}
+#else
+#include <termios.h>
+static int kbhit()
+{
+	struct termios term, oterm;
+	int fd = 0;
+	int c = 0;
+	tcgetattr(fd, &oterm);
+	memcpy(&term, &oterm, sizeof(term));
+	term.c_lflag = term.c_lflag & (!ICANON);
+	term.c_cc[VMIN] = 0;
+	term.c_cc[VTIME] = 1;
+	tcsetattr(fd, TCSANOW, &term);
+	c = getchar();
+	tcsetattr(fd, TCSANOW, &oterm);
+	if (c != -1)
+		ungetc(c, stdin);
+	return ((c != -1) ? 1 : 0);
+}
+
+static int getch()
+{
+	static int ch = -1, fd = 0;
+	struct termios neu, alt;
+	fd = fileno(stdin);
+	tcgetattr(fd, &alt);
+	neu = alt;
+	neu.c_lflag &= ~(ICANON|ECHO);
+	tcsetattr(fd, TCSANOW, &neu);
+	ch = getchar();
+	tcsetattr(fd, TCSANOW, &alt);
+	return ch;
 }
 #endif
 
@@ -61,6 +72,7 @@ void uart_write_send(uart_t* uart, uint8_t val)
     if(uart->control & (1<<3))
     {
         putc(val, stdout);
+        fflush(stdout);
         uart->status |= (1<<1);
     }
 }
@@ -92,13 +104,13 @@ int uart_recv_loop(uart_t* uart, uint8_t *interrupt_flags)
     {
         uart->recv = getch();
         uart->status |= (1<<0);
-        
-        // data over run error 
+
+        // data over run error
         if(!uart->recv_empty)
         {
             uart->status |= (1<<2) | (1<<3);
         }
-        
+
         // rx interrupt enabled
         if(uart->control & (1<<0))
         {
@@ -111,7 +123,7 @@ int uart_recv_loop(uart_t* uart, uint8_t *interrupt_flags)
     {
         *interrupt_flags |= (1<<0);
     }
-    
+
     return (*interrupt_flags &(1<<0)) != 0;
 }
 
