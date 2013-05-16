@@ -1,0 +1,33 @@
+NET "switches<0>" LOC="G18";
+NET "switches<1>" LOC="H18";
+NET "switches<2>" LOC="K18";
+NET "switches<3>" LOC="K17";
+NET "switches<4>" LOC="L14";
+NET "switches<5>" LOC="L13";
+NET "switches<6>" LOC="N17";
+NET "switches<7>" LOC="R17";
+
+NET "clk"   LOC = "B8";
+
+NET "leds<0>" LOC="J14";
+NET "leds<1>" LOC="J15";
+NET "leds<2>" LOC="K15";
+NET "leds<3>" LOC="K14";
+NET "leds<4>" LOC="E16";
+NET "leds<5>" LOC="P16";
+NET "leds<6>" LOC="E4";
+NET "leds<7>" LOC="P4";
+
+NET "anodes<0>" LOC="F17";
+NET "anodes<1>" LOC="H17";
+NET "anodes<2>" LOC="C18";
+NET "anodes<3>" LOC="F15";
+
+NET "sseg<0>" LOC="L18";
+NET "sseg<1>" LOC="F18";
+NET "sseg<2>" LOC="D17";
+NET "sseg<3>" LOC="D16";
+NET "sseg<4>" LOC="G14";
+NET "sseg<5>" LOC="J17";
+NET "sseg<6>" LOC="H14";
+NET "sseg<7>" LOC="C17";
