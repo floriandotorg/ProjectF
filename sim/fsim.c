@@ -43,6 +43,11 @@ uint8_t read_byte_part(uint8_t part, uint32_t part_address, cpu_t *cpu)
             return uart_read_status(cpu->uart);
         case 0x000007: // Send
             return uart_read_recv(cpu->uart);
+        case 0x00000A: // Clock
+        case 0x00000B:
+        case 0x00000C:
+        case 0x00000D:
+            return 0;
         case 0x0000E0: // Interrupt vector
         case 0x0000E1:
         case 0x0000E2:
@@ -389,10 +394,10 @@ int main(int argc, char *argv[])
     cpu->uart = uart_create();
 
     while(!halted) {
-      opcode = read_byte(cpu->pc++, cpu);
-      //printf("%02x\n", opcode);
-      switch (opcode) {
-      // LDAB
+        opcode = read_byte(cpu->pc++, cpu);
+        //printf("%02x\n", opcode);
+        switch (opcode) {
+        // LDAB
         case 0x7F:
             load_byte(&cpu->a, read_byte(abs_address(cpu), cpu));
             set_zero_a(cpu);
@@ -526,7 +531,7 @@ int main(int argc, char *argv[])
         case 0xB6:
             push((cpu->z << 3) | (cpu->n << 2) | cpu-> i, cpu);
             break;
-        //POA
+        // POA
         case 0xB4:
             cpu->a = pop(cpu);
             set_zero_a(cpu);
@@ -540,269 +545,269 @@ int main(int argc, char *argv[])
         case 0xB7:
             pof(cpu);
             break;
-      // AND
-      case 0xF0:
-        cpu->a = cpu->a & imm(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xF1:
-        cpu->a = cpu->a & absolute(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xF2:
-        cpu->a = cpu->a & ind_x(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xF3:
-        cpu->a = cpu->a & ind_off_x(cpu);
-        set_zero_a(cpu);
-        break;
-      // OR
-      case 0xF4:
-        cpu->a = cpu->a | imm(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xF5:
-        cpu->a = cpu->a | absolute(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xF6:
-        cpu->a = cpu->a | ind_x(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xF7:
-        cpu->a = cpu->a | ind_off_x(cpu);
-        set_zero_a(cpu);
-        break;
-      // XOR
-      case 0xF8:
-        cpu->a = cpu->a ^ imm(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xF9:
-        cpu->a = cpu->a ^ absolute(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xFA:
-        cpu->a = cpu->a ^ ind_x(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xFB:
-        cpu->a = cpu->a ^ ind_off_x(cpu);
-        set_zero_a(cpu);
-        break;
-      // ROR
-      case 0xFC:
-        rot(imm(cpu), cpu);
-        break;
-      case 0xFD:
-        rot(absolute(cpu), cpu);
-        break;
-      case 0xFE:
-        rot(ind_x(cpu), cpu);
-        break;
-      case 0xFF:
-        rot(ind_off_x(cpu), cpu);
-        break;
-      // ROL
-      case 0xE1:
-        rot(32 - imm(cpu), cpu);
-        break;
-      case 0xE2:
-        rot(32 - absolute(cpu), cpu);
-        break;
-      case 0xE3:
-        rot(32 - ind_x(cpu), cpu);
-        break;
-      case 0xE4:
-        rot(32 - ind_off_x(cpu), cpu);
-        break;
-      // LSR
-      case 0xE5:
-        cpu->a = cpu->a >> imm(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xE6:
-        cpu->a = cpu->a >> absolute(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xE7:
-        cpu->a = cpu->a >> ind_x(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xE8:
-        cpu->a = cpu->a >> ind_off_x(cpu);
-        set_zero_a(cpu);
-        break;
-      // LSL
-      case 0xE9:
-        cpu->a = cpu->a << imm(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xEA:
-        cpu->a = cpu->a << absolute(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xEB:
-        cpu->a = cpu->a << ind_x(cpu);
-        set_zero_a(cpu);
-        break;
-      case 0xEC:
-        cpu->a = cpu->a << ind_off_x(cpu);
-        set_zero_a(cpu);
-        break;
-      // ADD
-      case 0xC0:
-        cpu->a = cpu->a + imm(cpu);
-        set_flags_a(cpu);
-        break;
-      case 0xC1:
-        cpu->a = cpu->a + absolute(cpu);
-        set_flags_a(cpu);
-        break;
-      case 0xC2:
-        cpu->a = cpu->a + ind_x(cpu);
-        set_flags_a(cpu);
-        break;
-      case 0xC3:
-        cpu->a = cpu->a + ind_off_x(cpu);
-        set_flags_a(cpu);
-        break;
-      // CMP
-      case 0xC4:
-        cmp(imm(cpu), cpu);
-        break;
-      case 0xC5:
-        cmp(absolute(cpu), cpu);
-        break;
-      case 0xC6:
-        cmp(ind_x(cpu), cpu);
-        break;
-      case 0xC7:
-        cmp(ind_off_x(cpu), cpu);
-        break;
-      // JMP
-      case 0xD0:
-        cpu->pc = abs_address(cpu);
-        break;
-      case 0xD1:
-        cpu->pc = ind_x_address(cpu);
-        break;
-      case 0xD2:
-        cpu->pc = ind_off_x_address(cpu);
-        break;
-      // BNE
-      case 0xD3:
-        branch_zero(0, abs_address(cpu), cpu);
-        break;
-      case 0xD4:
-        branch_zero(0, ind_x_address(cpu), cpu);
-        break;
-      case 0xD5:
-        branch_zero(0, ind_off_x_address(cpu), cpu);
-        break;
-      // BEQ
-      case 0xDC:
-        branch_zero(1, abs_address(cpu), cpu);
-        break;
-      case 0xDD:
-        branch_zero(1, ind_x_address(cpu), cpu);
-        break;
-      case 0xDE:
-        branch_zero(1, ind_off_x_address(cpu), cpu);
-        break;
-      // BGT
-      case 0xD6:
-        branch_gl(0, abs_address(cpu), cpu);
-        break;
-      case 0xD7:
-        branch_gl(0, ind_x_address(cpu), cpu);
-        break;
-      case 0xD8:
-        branch_gl(0, ind_off_x_address(cpu), cpu);
-        break;
-      // BLT
-      case 0xD9:
-        branch_gl(1, abs_address(cpu), cpu);
-        break;
-      case 0xDA:
-        branch_gl(1, ind_x_address(cpu), cpu);
-        break;
-      case 0xDB:
-        branch_gl(1, ind_off_x_address(cpu), cpu);
-        break;
-      // JTS
-      case 0xBC:
-        jts(abs_address(cpu), cpu);
-        break;
-      case 0xBD:
-        jts(ind_x_address(cpu), cpu);
-        break;
-      case 0xBE:
-        jts(ind_off_x_address(cpu), cpu);
-        break;
-      // RTS
-      case 0xBF:
-        cpu->pc = pop(cpu);
-        break;
-      // RTI
-      case 0xB8:
-        cpu->i = 1;
-        cpu->pc = pop(cpu);
-        break;
-      // INA
-      case 0xC8:
-        cpu->a++;
-        set_flags_a(cpu);
-        break;
-      // INX
-      case 0xC9:
-        cpu->x++;
-        set_flags_x(cpu);
-        break;
-      // DEA
-      case 0xCA:
-        cpu->a--;
-        set_flags_a(cpu);
-        break;
-      // DEX
-      case 0xCB:
-        cpu->x--;
-        set_flags_x(cpu);
-        break;
-      // SEI
-      case 0x80:
-        cpu->i = 1;
-        break;
-      // CLI
-      case 0x81:
-        cpu->i = 0;
-        break;
-      // NOP
-      case 0x82:
-        break;
-      default:
-        printf("Illegal opcode \"%02x\"\n", opcode);
-        halted = 1;
-        break;
-      // HLT
-      case 0x83:
-        puts("");
-        puts("####################");
-        puts("#        ##        #");
-        puts("#### Halted CPU ####");
-        puts("#        ##        #");
-        puts("####################");
-        puts("");
-        halted = 1;
-        break;
-      }
-      uart_recv_loop(cpu->uart, &cpu->interrupt_flags);
-      if (cpu->interrupt_flags && cpu->i)
-      {
-          cpu->i = 0;
-          jts(cpu->interrupt_vector, cpu);
-      }
+        // AND
+        case 0xF0:
+            cpu->a = cpu->a & imm(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xF1:
+            cpu->a = cpu->a & absolute(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xF2:
+            cpu->a = cpu->a & ind_x(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xF3:
+            cpu->a = cpu->a & ind_off_x(cpu);
+            set_zero_a(cpu);
+            break;
+        // OR
+        case 0xF4:
+            cpu->a = cpu->a | imm(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xF5:
+            cpu->a = cpu->a | absolute(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xF6:
+            cpu->a = cpu->a | ind_x(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xF7:
+            cpu->a = cpu->a | ind_off_x(cpu);
+            set_zero_a(cpu);
+            break;
+        // XOR
+        case 0xF8:
+            cpu->a = cpu->a ^ imm(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xF9:
+            cpu->a = cpu->a ^ absolute(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xFA:
+            cpu->a = cpu->a ^ ind_x(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xFB:
+            cpu->a = cpu->a ^ ind_off_x(cpu);
+            set_zero_a(cpu);
+            break;
+        // ROR
+        case 0xFC:
+            rot(imm(cpu), cpu);
+            break;
+        case 0xFD:
+            rot(absolute(cpu), cpu);
+            break;
+        case 0xFE:
+            rot(ind_x(cpu), cpu);
+            break;
+        case 0xFF:
+            rot(ind_off_x(cpu), cpu);
+            break;
+        // ROL
+        case 0xE1:
+            rot(32 - imm(cpu), cpu);
+            break;
+        case 0xE2:
+            rot(32 - absolute(cpu), cpu);
+            break;
+        case 0xE3:
+            rot(32 - ind_x(cpu), cpu);
+            break;
+        case 0xE4:
+            rot(32 - ind_off_x(cpu), cpu);
+            break;
+        // LSR
+        case 0xE5:
+            cpu->a = cpu->a >> imm(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xE6:
+            cpu->a = cpu->a >> absolute(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xE7:
+            cpu->a = cpu->a >> ind_x(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xE8:
+            cpu->a = cpu->a >> ind_off_x(cpu);
+            set_zero_a(cpu);
+            break;
+        // LSL
+        case 0xE9:
+            cpu->a = cpu->a << imm(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xEA:
+            cpu->a = cpu->a << absolute(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xEB:
+            cpu->a = cpu->a << ind_x(cpu);
+            set_zero_a(cpu);
+            break;
+        case 0xEC:
+            cpu->a = cpu->a << ind_off_x(cpu);
+            set_zero_a(cpu);
+            break;
+        // ADD
+        case 0xC0:
+            cpu->a = cpu->a + imm(cpu);
+            set_flags_a(cpu);
+            break;
+        case 0xC1:
+            cpu->a = cpu->a + absolute(cpu);
+            set_flags_a(cpu);
+            break;
+        case 0xC2:
+            cpu->a = cpu->a + ind_x(cpu);
+            set_flags_a(cpu);
+            break;
+        case 0xC3:
+            cpu->a = cpu->a + ind_off_x(cpu);
+            set_flags_a(cpu);
+            break;
+        // CMP
+        case 0xC4:
+            cmp(imm(cpu), cpu);
+            break;
+        case 0xC5:
+            cmp(absolute(cpu), cpu);
+            break;
+        case 0xC6:
+            cmp(ind_x(cpu), cpu);
+            break;
+        case 0xC7:
+            cmp(ind_off_x(cpu), cpu);
+            break;
+        // JMP
+        case 0xD0:
+            cpu->pc = abs_address(cpu);
+            break;
+        case 0xD1:
+            cpu->pc = ind_x_address(cpu);
+            break;
+        case 0xD2:
+            cpu->pc = ind_off_x_address(cpu);
+            break;
+        // BNE
+        case 0xD3:
+            branch_zero(0, abs_address(cpu), cpu);
+            break;
+        case 0xD4:
+            branch_zero(0, ind_x_address(cpu), cpu);
+            break;
+        case 0xD5:
+            branch_zero(0, ind_off_x_address(cpu), cpu);
+            break;
+        // BEQ
+        case 0xDC:
+            branch_zero(1, abs_address(cpu), cpu);
+            break;
+        case 0xDD:
+            branch_zero(1, ind_x_address(cpu), cpu);
+            break;
+        case 0xDE:
+            branch_zero(1, ind_off_x_address(cpu), cpu);
+            break;
+        // BGT
+        case 0xD6:
+            branch_gl(0, abs_address(cpu), cpu);
+            break;
+        case 0xD7:
+            branch_gl(0, ind_x_address(cpu), cpu);
+            break;
+        case 0xD8:
+            branch_gl(0, ind_off_x_address(cpu), cpu);
+            break;
+        // BLT
+        case 0xD9:
+            branch_gl(1, abs_address(cpu), cpu);
+            break;
+        case 0xDA:
+            branch_gl(1, ind_x_address(cpu), cpu);
+            break;
+        case 0xDB:
+            branch_gl(1, ind_off_x_address(cpu), cpu);
+            break;
+        // JTS
+        case 0xBC:
+            jts(abs_address(cpu), cpu);
+            break;
+        case 0xBD:
+            jts(ind_x_address(cpu), cpu);
+            break;
+        case 0xBE:
+            jts(ind_off_x_address(cpu), cpu);
+            break;
+        // RTS
+        case 0xBF:
+            cpu->pc = pop(cpu);
+            break;
+        // RTI
+        case 0xB8:
+            cpu->i = 1;
+            cpu->pc = pop(cpu);
+            break;
+        // INA
+        case 0xC8:
+            cpu->a++;
+            set_flags_a(cpu);
+            break;
+        // INX
+        case 0xC9:
+            cpu->x++;
+            set_flags_x(cpu);
+            break;
+        // DEA
+        case 0xCA:
+            cpu->a--;
+            set_flags_a(cpu);
+            break;
+        // DEX
+        case 0xCB:
+            cpu->x--;
+            set_flags_x(cpu);
+            break;
+        // SEI
+        case 0x80:
+            cpu->i = 1;
+            break;
+        // CLI
+        case 0x81:
+            cpu->i = 0;
+            break;
+        // NOP
+        case 0x82:
+            break;
+        default:
+            printf("Illegal opcode \"%02x\"\n", opcode);
+            halted = 1;
+            break;
+        // HLT
+        case 0x83:
+            puts("");
+            puts("####################");
+            puts("#        ##        #");
+            puts("#### Halted CPU ####");
+            puts("#        ##        #");
+            puts("####################");
+            puts("");
+            halted = 1;
+            break;
+        }
+        uart_recv_loop(cpu->uart, &cpu->interrupt_flags);
+        if (cpu->interrupt_flags && cpu->i)
+        {
+            cpu->i = 0;
+            jts(cpu->interrupt_vector, cpu);
+        }
     }
 
     puts("Register Dump:");
