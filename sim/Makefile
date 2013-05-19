@@ -2,8 +2,8 @@ RM=rm
 CC=gcc
 CFLAGS=-c -Wall
 LDFLAGS=
-SOURCES=fsim.c uart.c
-HEADERS=uart.h
+SOURCES=fsim.c cpu.c uart.c
+HEADERS=cpu.h uart.h
 OBJECTS=$(SOURCES:.c=.o)
 EXECUTABLE=fsim
  
